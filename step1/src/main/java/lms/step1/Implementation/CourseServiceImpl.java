@@ -141,7 +141,32 @@ public class CourseServiceImpl implements CourseService {
         log.info("✅ Instructor {} assigned to course {}", instructor.getUsername(), course.getTitle());
     }
 
-    
+    @Override
+    public List<CourseDTO> getRecentCoursesForStudent(String username) {
+        log.info("Fetching recent courses for student: {}", username);
+        List<Course> courses = courseRepository.findRecentCoursesByStudent(username);
+        return courses.stream()
+            .map(this::mapToDTO)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<CourseDTO> getRecentCoursesForInstructor(String username) {
+        log.info("Fetching recent courses for instructor: {}", username);
+        List<Course> courses = courseRepository.findRecentCoursesByInstructor(username);
+        return courses.stream()
+            .map(this::mapToDTO)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<CourseDTO> getRecentCourses() {
+        log.info("Fetching recent courses for admin");
+        List<Course> courses = courseRepository.findTop5ByOrderByCreatedAtDesc();
+        return courses.stream()
+            .map(this::mapToDTO)
+            .collect(Collectors.toList());
+    }
 
     private CourseDTO mapToDTO(Course course) {
         return CourseDTO.builder()

@@ -59,14 +59,14 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        throw new Error('لا يوجد token');
+        throw new Error('No token found');
       }
 
-      const response = await axios.get('http://localhost:8080/auth/verify');
-      const userData = response.data?.user;
+      const response = await axios.get('http://localhost:8080/user/my-profile');
+      const userData = response.data;
 
       if (!userData) {
-        throw new Error('بيانات المستخدم غير صالحة');
+        throw new Error('Invalid user data');
       }
 
       setAuthState({
@@ -76,6 +76,7 @@ export const AuthProvider = ({ children }) => {
           role: userData.role,
           firstName: userData.firstName,
           lastName: userData.lastName,
+          profilePicture: userData.profilePicture
         },
         isLoading: false,
         error: null,
@@ -84,7 +85,7 @@ export const AuthProvider = ({ children }) => {
 
       return true;
     } catch (err) {
-      console.error('فشل التحقق من المصادقة:', err);
+      console.error('Authentication verification failed:', err);
       setAuthState(prev => ({
         ...prev,
         user: null,
@@ -119,13 +120,17 @@ export const AuthProvider = ({ children }) => {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       
       const response = await axios.post('http://localhost:8080/auth/login', credentials);
-      const { accessToken, user: userData } = response.data;
+      const { accessToken } = response.data;
 
-      if (!accessToken || !userData) {
-        throw new Error('استجابة تسجيل الدخول غير صالحة');
+      if (!accessToken) {
+        throw new Error('Invalid login response');
       }
 
       localStorage.setItem('accessToken', accessToken);
+
+      // Fetch user profile after successful login
+      const profileResponse = await axios.get('http://localhost:8080/user/my-profile');
+      const userData = profileResponse.data;
 
       const userPayload = {
         id: userData.id,
@@ -133,6 +138,7 @@ export const AuthProvider = ({ children }) => {
         role: userData.role,
         firstName: userData.firstName,
         lastName: userData.lastName,
+        profilePicture: userData.profilePicture
       };
 
       setAuthState({
@@ -145,7 +151,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: userPayload };
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
-      console.error('خطأ في تسجيل الدخول:', errorMessage);
+      console.error('Login error:', errorMessage);
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
@@ -188,14 +194,35 @@ export const AuthProvider = ({ children }) => {
     navigate('/login', { replace: true });
   }, [navigate]);
 
+  // Add function to update user profile
+  const updateUserProfile = useCallback(async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/user/my-profile');
+      const userData = response.data;
+      
+      setAuthState(prev => ({
+        ...prev,
+        user: {
+          ...prev.user,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profilePicture: userData.profilePicture
+        }
+      }));
+    } catch (error) {
+      console.error('Failed to update user profile:', error);
+    }
+  }, []);
+
   // قيمة السياق المذكرة
   const contextValue = useMemo(() => ({
     ...authState,
     login,
     register,
     logout,
-    checkUserLoggedIn
-  }), [authState, logout, checkUserLoggedIn]);
+    checkUserLoggedIn,
+    updateUserProfile
+  }), [authState, login, register, logout, checkUserLoggedIn, updateUserProfile]);
 
   return (
     <AuthContext.Provider value={contextValue}>

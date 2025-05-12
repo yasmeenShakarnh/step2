@@ -4,7 +4,7 @@ import {
   AppBar, Toolbar, Typography, Drawer, List, ListItem, 
   ListItemIcon, ListItemText, Box, Grid, Card, CardContent, 
   Avatar, IconButton, Divider, Menu, MenuItem, Badge,
-  Popover, ListItemAvatar, Chip, Button
+  Popover, ListItemAvatar, Chip, Button, LinearProgress
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -25,7 +25,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 
 const Dashboard = () => {
-  const { user, logout, isAuthenticated } = useContext(AuthContext);
+  const { user, logout, isAuthenticated, updateUserProfile } = useContext(AuthContext);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
@@ -39,25 +39,37 @@ const Dashboard = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
   const [lessonProgress, setLessonProgress] = useState([]);
+  const [recentCourses, setRecentCourses] = useState([]);
+  const [courseProgress, setCourseProgress] = useState({});
 
-useEffect(() => {
-  const fetchLessonProgress = async () => {
-    if (user?.role === 'STUDENT') {
-      try {
-        const response = await axios.get('http://localhost:8080/lessons/progress/course/{courseId}', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        setLessonProgress(response.data);
-      } catch (error) {
-        console.error('Failed to fetch lesson progress:', error);
+  // Add effect to update user profile when component mounts
+  useEffect(() => {
+    updateUserProfile();
+  }, [updateUserProfile]);
+
+  // Add debug logging for user data
+  useEffect(() => {
+    console.log('Current user data:', user);
+  }, [user]);
+
+  useEffect(() => {
+    const fetchLessonProgress = async () => {
+      if (user?.role === 'STUDENT') {
+        try {
+          const response = await axios.get('http://localhost:8080/lessons/progress/student', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          setLessonProgress(response.data);
+        } catch (error) {
+          console.error('Failed to fetch lesson progress:', error);
+        }
       }
-    }
-  };
+    };
 
-  fetchLessonProgress();
-}, [user]);
+    fetchLessonProgress();
+  }, [user]);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -79,6 +91,56 @@ useEffect(() => {
   
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const fetchRecentCourses = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/courses/recent', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        setRecentCourses(response.data.slice(0, 5)); // Get last 5 courses
+      } catch (error) {
+        console.error('Failed to fetch recent courses:', error);
+      }
+    };
+
+    const fetchCourseProgress = async () => {
+      if (user?.role === 'STUDENT') {
+        try {
+          const response = await axios.get('http://localhost:8080/lessons/progress/student', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          // Calculate progress for each course
+          const progressMap = {};
+          response.data.forEach(progress => {
+            if (!progressMap[progress.courseId]) {
+              progressMap[progress.courseId] = {
+                total: 0,
+                completed: 0,
+                title: progress.lessonTitle.split(' - ')[0] // Extract course title from lesson title
+              };
+            }
+            progressMap[progress.courseId].total++;
+            if (progress.completed) {
+              progressMap[progress.courseId].completed++;
+            }
+          });
+          
+          setCourseProgress(progressMap);
+        } catch (error) {
+          console.error('Failed to fetch course progress:', error);
+        }
+      }
+    };
+
+    fetchRecentCourses();
+    fetchCourseProgress();
+  }, [user]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -146,6 +208,133 @@ useEffect(() => {
         </ListItem>
       </List>
     </div>
+  );
+
+  const renderStudentDashboard = () => (
+    <Grid container spacing={3}>
+      <Grid item xs={12}>
+        <Typography variant="h5" gutterBottom>
+          Recent Courses
+        </Typography>
+      </Grid>
+      {recentCourses.map((course) => (
+        <Grid item xs={12} md={6} lg={4} key={course.id}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                {course.title}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                {course.description}
+              </Typography>
+              {courseProgress[course.id] && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" gutterBottom>
+                    Progress: {Math.round((courseProgress[course.id].completed / courseProgress[course.id].total) * 100)}%
+                  </Typography>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={(courseProgress[course.id].completed / courseProgress[course.id].total) * 100}
+                    sx={{ height: 10, borderRadius: 5 }}
+                  />
+                </Box>
+              )}
+              <Button
+                variant="contained"
+                color="primary"
+                component={Link}
+                to={`/courses/${course.id}`}
+                sx={{ mt: 2 }}
+              >
+                Continue Learning
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  );
+
+  const renderInstructorDashboard = () => (
+    <Grid container spacing={3}>
+      <Grid item xs={12}>
+        <Typography variant="h5" gutterBottom>
+          Recent Courses
+        </Typography>
+      </Grid>
+      {recentCourses.map((course) => (
+        <Grid item xs={12} md={6} lg={4} key={course.id}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                {course.title}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                {course.description}
+              </Typography>
+              <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  component={Link}
+                  to={`/courses/${course.id}`}
+                >
+                  View Course
+                </Button>
+                <Button
+                  variant="outlined"
+                  component={Link}
+                  to={`/courses/${course.id}/students`}
+                >
+                  View Progress
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  );
+
+  const renderAdminDashboard = () => (
+    <Grid container spacing={3}>
+      <Grid item xs={12}>
+        <Typography variant="h5" gutterBottom>
+          Recent Courses
+        </Typography>
+      </Grid>
+      {recentCourses.map((course) => (
+        <Grid item xs={12} md={6} lg={4} key={course.id}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                {course.title}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                {course.description}
+              </Typography>
+              <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  component={Link}
+                  to={`/courses/${course.id}`}
+                >
+                  View Course
+                </Button>
+                <Button
+                  variant="outlined"
+                  component={Link}
+                  to={`/admin/courses/${course.id}`}
+                >
+                  Manage Course
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
   );
 
   return (
@@ -276,7 +465,17 @@ useEffect(() => {
               onClick={handleMenu}
               color="inherit"
             >
-              <Avatar alt={user?.firstName} src="/static/images/avatar/1.jpg" />
+              <Avatar 
+                alt={`${user?.firstName || ''} ${user?.lastName || ''}`}
+                src={user?.profilePicture ? `http://localhost:8080/uploads/profile-pictures/${user.profilePicture}` : undefined}
+                sx={{ 
+                  bgcolor: user?.profilePicture ? 'transparent' : 'primary.main',
+                  width: 32,
+                  height: 32
+                }}
+              >
+                {!user?.profilePicture && `${user?.firstName?.charAt(0) || ''}${user?.lastName?.charAt(0) || ''}`}
+              </Avatar>
             </IconButton>
             <Menu
               id="menu-appbar"
@@ -346,187 +545,10 @@ useEffect(() => {
           Welcome back, {user?.firstName || 'User'}!
         </Typography>
 
-        <Grid container spacing={3}>
-          {/* Stats Cards... */}
-        </Grid>
-
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-          {/* Recent Activity... */}
-        </Grid>
+        {user?.role === 'STUDENT' && renderStudentDashboard()}
+        {user?.role === 'INSTRUCTOR' && renderInstructorDashboard()}
+        {user?.role === 'ADMIN' && renderAdminDashboard()}
       </Box>
-
-      <Box
-  component="main"
-  sx={{ 
-    flexGrow: 1, 
-    p: 3, 
-    width: { sm: `calc(100% - 240px)` },
-    backgroundColor: '#f5f5f5',
-    minHeight: '100vh'
-  }}
->
-  <Toolbar />
-  <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
-    Welcome back, {user?.firstName || 'User'}!
-  </Typography>
-
-  {user?.role === 'STUDENT' && (
-    <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Your Course Progress
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            {lessonProgress.length > 0 ? (
-              <List>
-                {lessonProgress.map((lesson, index) => (
-                  <ListItem key={index}>
-                    <ListItemIcon>
-                      {lesson.completed ? (
-                        <CheckCircleIcon color="success" />
-                      ) : (
-                        <RadioButtonUncheckedIcon />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={lesson.lessonTitle}
-                      secondary={`Course: ${lesson.courseId}`}
-                    />
-                    <Chip
-                      label={lesson.completed ? 'Completed' : 'In Progress'}
-                      color={lesson.completed ? 'success' : 'warning'}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography variant="body1" color="textSecondary">
-                No progress data available.
-              </Typography>
-            )}
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
-  )}
-
-  {user?.role === 'INSTRUCTOR' && (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Course Management
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Button
-              variant="contained"
-              color="primary"
-              component={Link}
-              to="/courses/create"
-              sx={{ mr: 2 }}
-            >
-              Create New Course
-            </Button>
-            <Button
-              variant="outlined"
-              component={Link}
-              to="/courses"
-            >
-              View All Courses
-            </Button>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Student Progress Overview
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Typography variant="body1">
-              View and manage your students' progress
-            </Typography>
-            <Button
-              variant="outlined"
-              sx={{ mt: 2 }}
-              component={Link}
-              to="/progress"
-            >
-              View Progress Reports
-            </Button>
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
-  )}
-
-  {user?.role === 'ADMIN' && (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={4}>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              User Management
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Button
-              variant="contained"
-              color="primary"
-              component={Link}
-              to="/users"
-              fullWidth
-              sx={{ mb: 2 }}
-            >
-              Manage Users
-            </Button>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={4}>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              System Settings
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Button
-              variant="contained"
-              color="secondary"
-              component={Link}
-              to="/settings"
-              fullWidth
-            >
-              System Configuration
-            </Button>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={4}>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Reports
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Button
-              variant="outlined"
-              component={Link}
-              to="/reports"
-              fullWidth
-              sx={{ mb: 1 }}
-            >
-              Generate Reports
-            </Button>
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
-  )}
-</Box>
     </Box>
   );
 };

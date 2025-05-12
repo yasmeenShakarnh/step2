@@ -139,5 +139,20 @@ public ResponseEntity<List<CourseDTO>> getAllCourses() {
     return ResponseEntity.ok(courseDTOs);
 }
 
+@GetMapping("/recent")
+public ResponseEntity<List<CourseDTO>> getRecentCourses(Authentication auth) {
+    log.info("🔍 Fetching recent courses for user: {}", auth.getName());
+    List<CourseDTO> courses;
+    
+    if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_STUDENT"))) {
+        courses = courseService.getRecentCoursesForStudent(auth.getName());
+    } else if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_INSTRUCTOR"))) {
+        courses = courseService.getRecentCoursesForInstructor(auth.getName());
+    } else {
+        courses = courseService.getRecentCourses();
+    }
+    
+    return ResponseEntity.ok(courses);
+}
 
 }
