@@ -21,76 +21,21 @@ import {
 } from '@mui/icons-material';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 
 const Dashboard = () => {
   const { user, logout, isAuthenticated, updateUserProfile } = useContext(AuthContext);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
-  const [stats, setStats] = useState({
-    courses: 0,
-    students: 0,
-    instructors: 0,
-    assignments: 0
-  });
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
-  const [lessonProgress, setLessonProgress] = useState([]);
   const [recentCourses, setRecentCourses] = useState([]);
   const [courseProgress, setCourseProgress] = useState({});
 
-  // Add effect to update user profile when component mounts
   useEffect(() => {
     updateUserProfile();
   }, [updateUserProfile]);
-
-  // Add debug logging for user data
-  useEffect(() => {
-    console.log('Current user data:', user);
-  }, [user]);
-
-  useEffect(() => {
-    const fetchLessonProgress = async () => {
-      if (user?.role === 'STUDENT') {
-        try {
-          const response = await axios.get('http://localhost:8080/lessons/progress/student', {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-          setLessonProgress(response.data);
-        } catch (error) {
-          console.error('Failed to fetch lesson progress:', error);
-        }
-      }
-    };
-
-    fetchLessonProgress();
-  }, [user]);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/notifications', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        setNotifications(response.data);
-        setUnreadCount(response.data.filter(n => !n.read).length);
-      } catch (error) {
-        console.error('فشل في جلب الإشعارات:', error);
-      }
-    };
-  
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // تحديث كل 30 ثانية
-  
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const fetchRecentCourses = async () => {
@@ -100,7 +45,7 @@ const Dashboard = () => {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
-        setRecentCourses(response.data.slice(0, 5)); // Get last 5 courses
+        setRecentCourses(response.data.slice(-5));
       } catch (error) {
         console.error('Failed to fetch recent courses:', error);
       }
@@ -115,14 +60,13 @@ const Dashboard = () => {
             }
           });
           
-          // Calculate progress for each course
           const progressMap = {};
           response.data.forEach(progress => {
             if (!progressMap[progress.courseId]) {
               progressMap[progress.courseId] = {
                 total: 0,
                 completed: 0,
-                title: progress.lessonTitle.split(' - ')[0] // Extract course title from lesson title
+                title: progress.lessonTitle.split(' - ')[0]
               };
             }
             progressMap[progress.courseId].total++;
@@ -245,6 +189,7 @@ const Dashboard = () => {
                 component={Link}
                 to={`/courses/${course.id}`}
                 sx={{ mt: 2 }}
+                fullWidth
               >
                 Continue Learning
               </Button>
@@ -272,23 +217,16 @@ const Dashboard = () => {
               <Typography variant="body2" color="textSecondary" gutterBottom>
                 {course.description}
               </Typography>
-              <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  component={Link}
-                  to={`/courses/${course.id}`}
-                >
-                  View Course
-                </Button>
-                <Button
-                  variant="outlined"
-                  component={Link}
-                  to={`/courses/${course.id}/students`}
-                >
-                  View Progress
-                </Button>
-              </Box>
+              <Button
+                variant="contained"
+                color="primary"
+                component={Link}
+                to={`/courses/${course.id}`}
+                sx={{ mt: 2 }}
+                fullWidth
+              >
+                View Course
+              </Button>
             </CardContent>
           </Card>
         </Grid>
@@ -313,23 +251,16 @@ const Dashboard = () => {
               <Typography variant="body2" color="textSecondary" gutterBottom>
                 {course.description}
               </Typography>
-              <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  component={Link}
-                  to={`/courses/${course.id}`}
-                >
-                  View Course
-                </Button>
-                <Button
-                  variant="outlined"
-                  component={Link}
-                  to={`/admin/courses/${course.id}`}
-                >
-                  Manage Course
-                </Button>
-              </Box>
+              <Button
+                variant="contained"
+                color="primary"
+                component={Link}
+                to={`/courses/${course.id}`}
+                sx={{ mt: 2 }}
+                fullWidth
+              >
+                View Course
+              </Button>
             </CardContent>
           </Card>
         </Grid>
@@ -374,89 +305,89 @@ const Dashboard = () => {
               </Badge>
             </IconButton>
             <Popover
-  open={Boolean(notificationsAnchorEl)}
-  anchorEl={notificationsAnchorEl}
-  onClose={handleNotificationsClose}
-  anchorOrigin={{
-    vertical: 'bottom',
-    horizontal: 'right',
-  }}
-  transformOrigin={{
-    vertical: 'top',
-    horizontal: 'right',
-  }}
->
-  <Box sx={{ width: 360, p: 2 }}>
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-      <Typography variant="h6">Notifications</Typography>
-      {unreadCount > 0 && (
-        <Button size="small" onClick={markAllAsRead}>
-          Mark all as read
-        </Button>
-      )}
-    </Box>
-    <Divider />
-   <List sx={{ maxHeight: 400, overflow: 'auto' }}>
-  {notifications.length > 0 ? (
-    notifications.map((notification) => (
-      <ListItem 
-        key={notification.id}
-        sx={{ 
-          backgroundColor: notification.read ? '#f9f9f9' : '#e3f2fd',
-          borderLeft: notification.read ? 'none' : '4px solid #2196f3',
-          mb: 1,
-          borderRadius: 1
-        }}
-      >
-        <ListItemAvatar>
-          <Avatar sx={{ bgcolor: 'primary.main' }}>
-            <SchoolIcon />
-          </Avatar>
-        </ListItemAvatar>
-        <ListItemText
-          primary={
-            <Typography variant="subtitle1" fontWeight="bold">
-              {notification.title}
-            </Typography>
-          }
-          secondary={
-            <>
-              <Typography variant="body2">
-                {notification.message}
-              </Typography>
-              <Chip 
-                label={notification.courseName}
-                size="small"
-                sx={{ mt: 1 }}
-                color="primary"
-              />
-            </>
-          }
-        />
-      </ListItem>
-    ))
-  ) : (
-    <ListItem>
-      <ListItemText 
-        primary="لا توجد إشعارات حاليا"
-        sx={{ textAlign: 'center', color: 'text.secondary' }}
-      />
-    </ListItem>
-  )}
-</List>
-    <Divider />
-    <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1 }}>
-      <Button 
-        component={Link} 
-        to="/notifications" 
-        size="small"
-        sx={{ color: 'primary.main' }}
-      >
-        View all notifications
-      </Button>
-    </Box>
-  </Box>
-</Popover>
+              open={Boolean(notificationsAnchorEl)}
+              anchorEl={notificationsAnchorEl}
+              onClose={handleNotificationsClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+            >
+              <Box sx={{ width: 360, p: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">Notifications</Typography>
+                  {unreadCount > 0 && (
+                    <Button size="small" onClick={markAllAsRead}>
+                      Mark all as read
+                    </Button>
+                  )}
+                </Box>
+                <Divider />
+                <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <ListItem 
+                        key={notification.id}
+                        sx={{ 
+                          backgroundColor: notification.read ? '#f9f9f9' : '#e3f2fd',
+                          borderLeft: notification.read ? 'none' : '4px solid #2196f3',
+                          mb: 1,
+                          borderRadius: 1
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: 'primary.main' }}>
+                            <SchoolIcon />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography variant="subtitle1" fontWeight="bold">
+                              {notification.title}
+                            </Typography>
+                          }
+                          secondary={
+                            <>
+                              <Typography variant="body2">
+                                {notification.message}
+                              </Typography>
+                              <Chip 
+                                label={notification.courseName}
+                                size="small"
+                                sx={{ mt: 1 }}
+                                color="primary"
+                              />
+                            </>
+                          }
+                        />
+                      </ListItem>
+                    ))
+                  ) : (
+                    <ListItem>
+                      <ListItemText 
+                        primary="No notifications available"
+                        sx={{ textAlign: 'center', color: 'text.secondary' }}
+                      />
+                    </ListItem>
+                  )}
+                </List>
+                <Divider />
+                <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1 }}>
+                  <Button 
+                    component={Link} 
+                    to="/notifications" 
+                    size="small"
+                    sx={{ color: 'primary.main' }}
+                  >
+                    View all notifications
+                  </Button>
+                </Box>
+              </Box>
+            </Popover>
             <IconButton
               size="large"
               aria-label="account of current user"
@@ -494,7 +425,7 @@ const Dashboard = () => {
             >
               <MenuItem onClick={handleProfileClick}>
                 <ListItemIcon><AccountCircleIcon fontSize="small" /></ListItemIcon>
-                UserProfile
+                User Profile
               </MenuItem>
               <MenuItem onClick={handleLogout}>
                 <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>

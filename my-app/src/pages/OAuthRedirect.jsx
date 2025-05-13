@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext.js'; // Make sure the path is correct
+import { useAuth } from '../context/AuthContext.js';
 import axios from 'axios';
 
 const OAuthRedirect = () => {

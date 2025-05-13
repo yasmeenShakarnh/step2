@@ -16,6 +16,7 @@ import {
 import CourseFormModal from './CourseFormModal.js';
 import AssignInstructorModal from './AssignInstructorModal.js';
 import { AuthContext } from '../context/AuthContext.js';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const Courses = () => {
   const navigate = useNavigate();
@@ -31,6 +32,8 @@ const Courses = () => {
   const [currentCourse, setCurrentCourse] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [instructors, setInstructors] = useState([]);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState(null);
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -175,17 +178,23 @@ const Courses = () => {
     }
   };
 
-  const handleDeleteCourse = async (courseId) => {
+  const handleDeleteCourse = (courseId) => {
+    setCourseToDelete(courseId);
+    setShowConfirmDialog(true);
+  };
+
+  const confirmDeleteCourse = async () => {
     try {
-      await axios.delete(`http://localhost:8080/courses/${courseId}`, {
+      const token = localStorage.getItem('accessToken');
+      await axios.delete(`http://localhost:8080/courses/${courseToDelete}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+          Authorization: `Bearer ${token}`
         }
       });
-      fetchCourses();
-    } catch (error) {
-      console.error('Error deleting course:', error);
-      setError('Failed to delete course. Please try again.');
+      setCourses(courses.filter(course => course.id !== courseToDelete));
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      alert('Failed to delete course');
     }
   };
 
@@ -331,9 +340,7 @@ const Courses = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm('Are you sure you want to delete this course?')) {
-                            handleDeleteCourse(course.id);
-                          }
+                          handleDeleteCourse(course.id);
                         }}
                         className="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
                         title="Delete Course"
@@ -447,6 +454,14 @@ const Courses = () => {
         course={currentCourse}
         instructors={instructors}
         onClose={() => setIsAssignModalOpen(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={confirmDeleteCourse}
+        title="Delete Course"
+        message="Are you sure you want to delete this course? This action cannot be undone."
       />
     </div>
   );

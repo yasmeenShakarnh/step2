@@ -26,6 +26,7 @@ import {
 import { PuzzlePieceIcon } from '@heroicons/react/24/solid';
 import { Tab } from '@headlessui/react';
 import { motion } from 'framer-motion';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 
 const CourseDetails = () => {
   const { courseId } = useParams();
@@ -216,7 +217,6 @@ const CourseDetails = () => {
     </div>
   );
 };
-
 
 const LessonsTab = ({ courseId, userRole }) => {
   const [lessons, setLessons] = useState([]);
@@ -954,8 +954,7 @@ const AssignmentsTab = ({ courseId, userRole }) => {
   );
 };
 
-const QuizzesTab = ({ courseId, fetchQuizzes }) => {
-  const [userRole, setUserRole] = useState(null);
+const QuizzesTab = ({ courseId, fetchQuizzes, userRole }) => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -968,6 +967,8 @@ const QuizzesTab = ({ courseId, fetchQuizzes }) => {
   const [newOption, setNewOption] = useState('');
   const [submissionStatus, setSubmissionStatus] = useState({});
   const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [quizToDelete, setQuizToDelete] = useState(null);
   const [newQuiz, setNewQuiz] = useState({
     title: '',
     description: '',
@@ -981,16 +982,6 @@ const QuizzesTab = ({ courseId, fetchQuizzes }) => {
     correctAnswer: ''
   });
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setUserRole(payload.role);
-    } else {
-      setUserRole('UNKNOWN');
-    }
-  }, []);
 
   useEffect(() => {
     const loadQuizzes = async () => {
@@ -1267,12 +1258,15 @@ const QuizzesTab = ({ courseId, fetchQuizzes }) => {
   };
 
   const handleDeleteQuiz = async (quizId) => {
-    if (!confirm('Are you sure you want to delete this quiz?')) return;
-    
+    setQuizToDelete(quizId);
+    setShowConfirmDialog(true);
+  };
+
+  const confirmDeleteQuiz = async () => {
     try {
       const token = localStorage.getItem('accessToken');
       await axios.delete(
-        `http://localhost:8080/api/quizzes/${quizId}`,
+        `http://localhost:8080/api/quizzes/${quizToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -1280,7 +1274,7 @@ const QuizzesTab = ({ courseId, fetchQuizzes }) => {
         }
       );
       
-      setQuizzes(quizzes.filter(quiz => quiz.id !== quizId));
+      setQuizzes(quizzes.filter(quiz => quiz.id !== quizToDelete));
     } catch (err) {
       console.error('Error deleting quiz:', err);
       alert('Failed to delete quiz');
@@ -1835,6 +1829,13 @@ const QuizzesTab = ({ courseId, fetchQuizzes }) => {
           </motion.div>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={confirmDeleteQuiz}
+        title="Delete Quiz"
+        message="Are you sure you want to delete this quiz? This action cannot be undone."
+      />
     </div>
   );
 };

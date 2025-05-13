@@ -1,13 +1,14 @@
 // src/context/NotificationContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from './AuthContext.js';
 
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
 
   const fetchNotifications = async () => {
     try {

@@ -18,8 +18,6 @@ import OAuthRedirect  from './pages/OAuthRedirect.jsx';
 import QuizPage from './pages/QuizPage.js';
 import CreateQuizPage from './pages/CreateQuiz.jsx';
 
-NotificationBell
-
 function App() {
   const navigate = useNavigate();
 
