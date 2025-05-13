@@ -1,17 +1,18 @@
 package lms.step1.DTO;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Data
 @Builder
 public class AssignmentSubmissionDTO {
     private Long id;
-    private Long studentId; // 🔥 أضفنا حقل رقم الطالب
+    private Long studentId;
+    private String studentName;
     private String solutionText;
     private String solutionFileUrl;
     private LocalDateTime submissionDate;
+    private String feedback;
+    private LocalDateTime feedbackDate;
 }

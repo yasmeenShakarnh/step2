@@ -1,6 +1,9 @@
 package lms.step1.Repository;
 
+import lms.step1.Model.Assignment;
 import lms.step1.Model.AssignmentSubmission;
+import lms.step1.Model.User;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,9 +19,10 @@ public interface SubmissionRepository extends JpaRepository<AssignmentSubmission
     // يمكنك إضافة استعلامات مخصصة هنا إذا لزم الأمر
     List<AssignmentSubmission> findByAssignmentId(Long assignmentId);
     Optional<AssignmentSubmission> findByAssignmentIdAndStudentId(Long assignmentId, Long studentId);
-
-
-
+    boolean existsByAssignmentAndStudent(Assignment assignment, User student);
+// In SubmissionRepository.java
+List<AssignmentSubmission> findByAssignment(Assignment assignment);
+    Optional<AssignmentSubmission> findByAssignmentAndStudent(Assignment assignment, User student);
 
     
 }

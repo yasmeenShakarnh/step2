@@ -16,6 +16,8 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 // في حزمة lms.step1.Model
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -42,7 +44,9 @@ public class AssignmentSubmission {
     
     private LocalDateTime submissionDate;
     
-    private Integer grade;
-    
+ private String feedback;
+ @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+
+    private LocalDateTime feedbackDate;    
     // Constructors, getters, setters سيتم توليدها تلقائياً بواسطة @Data
 }

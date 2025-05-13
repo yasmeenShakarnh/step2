@@ -13,12 +13,12 @@ import lms.step1.Repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -32,16 +32,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AssignmentService {
-
-    
 
     private final AssignmentRepository assignmentRepository;
     private final CourseRepository courseRepository;
@@ -63,7 +60,7 @@ public class AssignmentService {
         assignment.setTitle(assignmentDTO.getTitle());
         assignment.setDescription(assignmentDTO.getDescription());
         assignment.setDueDate(assignmentDTO.getDueDate());
-        assignment.setMaxScore(assignmentDTO.getMaxScore());
+        assignment.setAllowResubmissions(assignmentDTO.isAllowResubmissions());
         assignment.setCourse(course);
 
         Assignment savedAssignment = assignmentRepository.save(assignment);
@@ -74,14 +71,7 @@ public class AssignmentService {
             log.info("File uploaded successfully: {}", filePath);
         }
 
-        return new AssignmentDTO(
-                savedAssignment.getId(),
-                savedAssignment.getTitle(),
-                savedAssignment.getDescription(),
-                savedAssignment.getDueDate(),
-                savedAssignment.getMaxScore(),
-                course.getId()
-        );
+        return convertToDTO(savedAssignment);
     }
 
     public void uploadFile(Long assignmentId, MultipartFile file) {
@@ -104,14 +94,7 @@ public class AssignmentService {
     public List<AssignmentDTO> getAllAssignments() {
         log.info("Fetching all assignments...");
         return assignmentRepository.findAll().stream()
-                .map(a -> new AssignmentDTO(
-                        a.getId(),
-                        a.getTitle(),
-                        a.getDescription(),
-                        a.getDueDate(),
-                        a.getMaxScore(),
-                        a.getCourse().getId()
-                ))
+                .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -128,19 +111,12 @@ public class AssignmentService {
         assignment.setTitle(assignmentDTO.getTitle());
         assignment.setDescription(assignmentDTO.getDescription());
         assignment.setDueDate(assignmentDTO.getDueDate());
-        assignment.setMaxScore(assignmentDTO.getMaxScore());
+        assignment.setAllowResubmissions(assignmentDTO.isAllowResubmissions());
 
         Assignment updatedAssignment = assignmentRepository.save(assignment);
         log.info("Assignment updated with ID: {}", updatedAssignment.getId());
 
-        return new AssignmentDTO(
-                updatedAssignment.getId(),
-                updatedAssignment.getTitle(),
-                updatedAssignment.getDescription(),
-                updatedAssignment.getDueDate(),
-                updatedAssignment.getMaxScore(),
-                updatedAssignment.getCourse().getId()
-        );
+        return convertToDTO(updatedAssignment);
     }
 
     @Transactional
@@ -166,60 +142,46 @@ public class AssignmentService {
                     return new RuntimeException("Assignment not found with id: " + assignmentId);
                 });
 
-        return new AssignmentDTO(
-                assignment.getId(),
-                assignment.getTitle(),
-                assignment.getDescription(),
-                assignment.getDueDate(),
-                assignment.getMaxScore(),
-                assignment.getCourse().getId()
-        );
+        return convertToDTO(assignment);
     }
 
     public List<AssignmentDTO> getAssignmentsByCourseId(Long courseId) {
-        log.info("🔍 Fetching assignments for course ID: {}", courseId);
-    
+        log.info("Fetching assignments for course ID: {}", courseId);
+
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> {
-                    log.error("❌ Course not found with id: {}", courseId);
+                    log.error("Course not found with id: {}", courseId);
                     return new RuntimeException("Course not found with id: " + courseId);
                 });
-    
+
         return assignmentRepository.findByCourse(course).stream()
-                .map(a -> new AssignmentDTO(
-                        a.getId(),
-                        a.getTitle(),
-                        a.getDescription(),
-                        a.getDueDate(),
-                        a.getMaxScore(),
-                        course.getId()
-                )).collect(Collectors.toList());
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
-    
+
     private String saveFile(MultipartFile file, Long assignmentId) {
         try {
             File uploadDir = new File(UPLOAD_DIR);
             if (!uploadDir.exists()) {
                 uploadDir.mkdirs();
             }
-    
+
             String fileName = "assignment_" + assignmentId + "_" + file.getOriginalFilename();
             Path filePath = Paths.get(UPLOAD_DIR + fileName);
             Files.write(filePath, file.getBytes());
-    
-            // حفظ المسار داخل الـ assignment
+
             Assignment assignment = assignmentRepository.findById(assignmentId)
                     .orElseThrow(() -> new RuntimeException("Assignment not found"));
-    
+
             assignment.setFilePath(filePath.toString());
             assignmentRepository.save(assignment);
-    
+
             return filePath.toString();
         } catch (IOException e) {
             throw new RuntimeException("Error saving file", e);
         }
     }
-    
+
     public ResponseEntity<Resource> downloadAssignmentFile(Long assignmentId) throws IOException {
         log.info("Downloading file for assignment ID: {}", assignmentId);
 
@@ -253,27 +215,7 @@ public class AssignmentService {
                         "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
-    
-    public void submitSolution(Long assignmentId, String solutionText, MultipartFile solutionFile) {
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
-        
-        User currentStudent = getCurrentStudent();
-        
-        AssignmentSubmission submission = new AssignmentSubmission();
-        submission.setAssignment(assignment);
-        submission.setStudent(currentStudent);
-        submission.setSolutionText(solutionText);
-        submission.setSubmissionDate(LocalDateTime.now());
-        
-        if (solutionFile != null && !solutionFile.isEmpty()) {
-            String filePath = storeFile(solutionFile);
-            submission.setSolutionFilePath(filePath);
-        }
-        
-        submissionRepository.save(submission);
-    }
-    
+
     private User getCurrentStudent() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
@@ -281,28 +223,220 @@ public class AssignmentService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    private String storeFile(MultipartFile file) {
-        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+    public List<AssignmentSubmissionDTO> getAllSubmissionsByAssignmentId(Long assignmentId) {
+        List<AssignmentSubmission> submissions = submissionRepository.findByAssignmentId(assignmentId);
+
+        return submissions.stream()
+                .map(this::convertToSubmissionDTO)
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, Object> checkUserSubmission(Long assignmentId) {
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+        
+        User currentStudent = getCurrentStudent();
+        
+        Optional<AssignmentSubmission> submission = submissionRepository
+                .findByAssignmentAndStudent(assignment, currentStudent);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("exists", submission.isPresent());
+        response.put("submissionId", submission.map(AssignmentSubmission::getId).orElse(null));
+        
+        return response;
+    }
+
+    public boolean hasUserSubmittedAssignment(Long assignmentId, String username) {
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+        
+        User student = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        return submissionRepository.existsByAssignmentAndStudent(assignment, student);
+    }
+
+    public Long getUserSubmissionId(Long assignmentId, String username) {
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+        
+        User student = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        return submissionRepository.findByAssignmentAndStudent(assignment, student)
+                .map(AssignmentSubmission::getId)
+                .orElse(null);
+    }
+
+    @Transactional
+    public void submitSolution(Long assignmentId, String solutionText, MultipartFile solutionFile) {
+        // Get current authenticated student
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User student = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Get the assignment
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+
+        // Check if already submitted (unless resubmissions allowed)
+        if (!assignment.isAllowResubmissions() && 
+            submissionRepository.existsByAssignmentAndStudent(assignment, student)) {
+            throw new RuntimeException("You have already submitted this assignment");
+        }
+
+        // Validate due date
+        if (LocalDateTime.now().isAfter(assignment.getDueDate())) {
+            throw new RuntimeException("Cannot submit after due date");
+        }
+
+        // Validate file type if present
+        if (solutionFile != null && !solutionFile.isEmpty()) {
+            String contentType = solutionFile.getContentType();
+            if (!"application/pdf".equals(contentType)) {
+                throw new RuntimeException("Only PDF files are allowed");
+            }
+        }
+
+        // Create new submission
+        AssignmentSubmission submission = new AssignmentSubmission();
+        submission.setAssignment(assignment);
+        submission.setStudent(student);
+        submission.setSolutionText(solutionText);
+        submission.setSubmissionDate(LocalDateTime.now());
+        
+        // Handle file upload if present
+        if (solutionFile != null && !solutionFile.isEmpty()) {
+            try {
+                String fileName = storeFile(solutionFile);
+                submission.setSolutionFilePath(fileName);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to upload solution file: " + e.getMessage());
+            }
+        }
+        
+        submissionRepository.save(submission);
+    }
+
+    private String storeFile(MultipartFile file) throws IOException {
+        // إنشاء مجلد التحميل إذا لم يكن موجوداً
+        Path uploadPath = Paths.get(UPLOAD_DIR);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+        
+        // الحفاظ على امتداد الملف الأصلي
+        String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
+        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String fileName = "submission_" + UUID.randomUUID() + fileExtension;
+        
+        Path filePath = uploadPath.resolve(fileName);
+        
+        // حفظ الملف
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        
+        return filePath.toString(); // إرجاع المسار الكامل للملف
+    }
+
+    public Map<String, Object> getUserSubmissionDetails(Long assignmentId, String username) {
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+        
+        User student = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Optional<AssignmentSubmission> submission = submissionRepository
+                .findByAssignmentAndStudent(assignment, student);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("exists", submission.isPresent());
+        
+        if (submission.isPresent()) {
+            AssignmentSubmission sub = submission.get();
+            response.put("submissionId", sub.getId());
+            response.put("feedback", sub.getFeedback());
+            response.put("feedbackDate", sub.getFeedbackDate());
+            response.put("submissionDate", sub.getSubmissionDate());
+            response.put("solutionText", sub.getSolutionText());
+            response.put("solutionFileUrl", sub.getSolutionFilePath());
+            
+            response.put("allowResubmission", 
+                assignment.isAllowResubmissions() && 
+                LocalDateTime.now().isBefore(assignment.getDueDate()));
+        }
+        
+        return response;
+    }
+
+    @Transactional
+    public AssignmentSubmissionDTO addFeedback(Long submissionId, String feedback) {
+        AssignmentSubmission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found with id: " + submissionId));
+        
+        submission.setFeedback(feedback);
+        submission.setFeedbackDate(LocalDateTime.now());
+        
+        AssignmentSubmission updated = submissionRepository.save(submission);
+        return convertToSubmissionDTO(updated);
+    }
+
+    private AssignmentDTO convertToDTO(Assignment assignment) {
+        return AssignmentDTO.builder()
+                .id(assignment.getId())
+                .title(assignment.getTitle())
+                .description(assignment.getDescription())
+                .dueDate(assignment.getDueDate())
+                .maxScore(assignment.getMaxScore())
+                .courseId(assignment.getCourse().getId())
+                .allowResubmissions(assignment.isAllowResubmissions())
+                .build();
+    }
+
+    private AssignmentSubmissionDTO convertToSubmissionDTO(AssignmentSubmission submission) {
+        return AssignmentSubmissionDTO.builder()
+                .id(submission.getId())
+                .studentId(submission.getStudent().getId())
+                .studentName(submission.getStudent().getUsername())
+                .solutionText(submission.getSolutionText())
+                .solutionFileUrl(submission.getSolutionFilePath())
+                .submissionDate(submission.getSubmissionDate())
+                .feedback(submission.getFeedback())
+                .feedbackDate(submission.getFeedbackDate())
+                .build();
+    }
+
+    public Resource getSubmissionFileResource(Long submissionId) throws IOException {
+        AssignmentSubmission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        
+        if (submission.getSolutionFilePath() == null || submission.getSolutionFilePath().isEmpty()) {
+            throw new RuntimeException("No file associated with this submission");
+        }
+        
+        Path filePath = Paths.get(submission.getSolutionFilePath());
+        Resource resource = new UrlResource(filePath.toUri());
+        
+        if (!resource.exists() || !resource.isReadable()) {
+            throw new RuntimeException("File not found or not readable");
+        }
+        
+        return resource;
+    }
+
+    public Resource loadFileAsResource(String fileName) {
         try {
-            Path targetLocation = Paths.get(UPLOAD_DIR).resolve(fileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            return targetLocation.toString();
-        } catch (IOException ex) {
-            throw new RuntimeException("Could not store file " + fileName, ex);
+            Path filePath = Paths.get(fileName).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            
+            if(resource.exists()) {
+                return resource;
+            } else {
+                throw new RuntimeException("File not found " + fileName);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("File not found " + fileName, ex);
         }
     }
-public List<AssignmentSubmissionDTO> getAllSubmissionsByAssignmentId(Long assignmentId) {
-    List<AssignmentSubmission> submissions = submissionRepository.findByAssignmentId(assignmentId);
-
-    return submissions.stream()
-            .map(submission -> AssignmentSubmissionDTO.builder()
-                    .id(submission.getId())
-                    .studentId(submission.getStudent().getId()) // ✅ نجلب ID الطالب من كلاس User
-                    .solutionText(submission.getSolutionText())
-                    .solutionFileUrl(submission.getSolutionFilePath())
-                    .submissionDate(submission.getSubmissionDate())
-                    .build())
-            .collect(Collectors.toList());
-}
-
 }

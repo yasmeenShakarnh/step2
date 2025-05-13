@@ -11,7 +11,8 @@ const Login = () => {
     username: '',
     password: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    role: 'STUDENT' // إضافة حقل role مع قيمة افتراضية
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +31,6 @@ const Login = () => {
       if (refreshToken) {
         localStorage.setItem('refreshToken', refreshToken);
       }
-      // Set default axios authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
       navigate('/dashboard', { replace: true });
     }
@@ -84,33 +84,35 @@ const Login = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
+  e.preventDefault();
+  if (!validate()) return;
 
-    setIsLoading(true);
-    setErrors({});
+  setIsLoading(true);
+  setErrors({});
 
-    try {
-      if (isLogin) {
-        const response = await axios.post('http://localhost:8080/auth/login', {
-          username: formData.username,
-          password: formData.password
-        });
+  try {
+    if (isLogin) {
+      const response = await axios.post('http://localhost:8080/auth/login', {
+        username: formData.username,
+        password: formData.password
+      });
 
-        const { access_token, refresh_token } = response.data;
-        if (!access_token) throw new Error('No access token received');
+      const { access_token, refresh_token, user } = response.data;
+      if (!access_token) throw new Error('No access token received');
 
-        localStorage.setItem('accessToken', access_token);
-        if (refresh_token) localStorage.setItem('refreshToken', refresh_token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-        
-        navigate('/dashboard', { replace: true });
-      } else {
+      localStorage.setItem('accessToken', access_token);
+      if (refresh_token) localStorage.setItem('refreshToken', refresh_token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      
+      // إعادة تحميل الصفحة كاملة للتأكد من تحديث جميع الحالات
+      window.location.href = '/dashboard';
+    } else{
         const response = await axios.post('http://localhost:8080/auth/register', {
           username: formData.username,
           password: formData.password,
           firstName: formData.firstName,
-          lastName: formData.lastName
+          lastName: formData.lastName,
+          role: formData.role // إضافة role إلى بيانات التسجيل
         });
 
         setIsLogin(true);
@@ -234,6 +236,49 @@ const Login = () => {
                     placeholder="Doe"
                   />
                   {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+                </motion.div>
+
+                {/* Role Selection for Registration */}
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="mb-4"
+                >
+                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                    I am a:
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className={`relative border rounded-lg p-3 transition-all cursor-pointer ${formData.role === 'STUDENT' ? 'bg-purple-50 border-purple-500' : 'border-gray-300 hover:border-purple-300'}`}>
+                      <input
+                        type="radio"
+                        name="role"
+                        value="STUDENT"
+                        checked={formData.role === 'STUDENT'}
+                        onChange={handleChange}
+                        className="absolute opacity-0 w-0 h-0"
+                        id="studentRole"
+                      />
+                      <label htmlFor="studentRole" className="flex flex-col items-center cursor-pointer">
+                        <span className="font-medium">Student</span>
+                      </label>
+                    </div>
+                    
+                    <div className={`relative border rounded-lg p-3 transition-all cursor-pointer ${formData.role === 'INSTRUCTOR' ? 'bg-purple-50 border-purple-500' : 'border-gray-300 hover:border-purple-300'}`}>
+                      <input
+                        type="radio"
+                        name="role"
+                        value="INSTRUCTOR"
+                        checked={formData.role === 'INSTRUCTOR'}
+                        onChange={handleChange}
+                        className="absolute opacity-0 w-0 h-0"
+                        id="instructorRole"
+                      />
+                      <label htmlFor="instructorRole" className="flex flex-col items-center cursor-pointer">
+                        <span className="font-medium">Instructor</span>
+                      </label>
+                    </div>
+                  </div>
                 </motion.div>
               </>
             )}
@@ -361,5 +406,6 @@ const Login = () => {
     </div>
   );
 };
+
 
 export default Login;

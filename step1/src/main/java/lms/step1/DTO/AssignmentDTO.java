@@ -28,5 +28,9 @@ public class AssignmentDTO extends RepresentationModel<AssignmentDTO> {
     @Min(value = 0, message = "Max score must be a non-negative value")
     private int maxScore; // تم التغيير من totalMarks إلى maxScore
 
+   
+    
     private Long courseId;
+    private boolean allowResubmissions;
+
 }
