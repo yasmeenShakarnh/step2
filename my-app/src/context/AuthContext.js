@@ -1,11 +1,10 @@
-import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 // إنشاء سياق المصادقة
 const AuthContext = createContext();
 
-// مكون مزود السياق
 export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({
     user: null,
@@ -16,7 +15,7 @@ export const AuthProvider = ({ children }) => {
 
   const navigate = useNavigate();
 
-  // تكوين axios interceptors
+  // تكوين Axios interceptors
   useEffect(() => {
     const requestInterceptor = axios.interceptors.request.use(config => {
       const token = localStorage.getItem('accessToken');
@@ -40,9 +39,9 @@ export const AuthProvider = ({ children }) => {
       axios.interceptors.request.eject(requestInterceptor);
       axios.interceptors.response.eject(responseInterceptor);
     };
-  }, []); // This only runs on mount
+  }, []);
 
-  // تسجيل الخروج التلقائي عند انتهاء الصلاحية
+  // تسجيل الخروج التلقائي
   const handleAutoLogout = useCallback(() => {
     localStorage.removeItem('accessToken');
     setAuthState(prev => ({
@@ -54,118 +53,128 @@ export const AuthProvider = ({ children }) => {
     navigate('/login', { replace: true, state: { from: 'session-expired' } });
   }, [navigate]);
 
-  // التحقق من حالة تسجيل الدخول
- const checkUserLoggedIn = useCallback(async () => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setAuthState(prev => ({
-        ...prev,
-        isLoading: false,
-        isAuthenticated: false,
-        user: null
-      }));
-      return false;
-    }
-
-    // إضافة header التوكن يدويًا لهذه الطلبة فقط
-    const config = {
-      headers: {
-        Authorization: `Bearer ${token}`
+  // التحقق من حالة المصادقة
+  const checkUserLoggedIn = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setAuthState(prev => ({
+          ...prev,
+          isLoading: false,
+          isAuthenticated: false,
+          user: null
+        }));
+        return false;
       }
-    };
 
-    const response = await axios.get('http://localhost:8080/auth/verify', config);
-    const userData = response.data?.user;
+      const response = await axios.get('http://localhost:8080/auth/verify', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-    if (!userData) {
-      localStorage.removeItem('accessToken');
-      throw new Error('بيانات المستخدم غير صالحة');
-    }
+      const userData = response.data?.user;
+      if (!userData) {
+        localStorage.removeItem('accessToken');
+        throw new Error('بيانات المستخدم غير صالحة');
+      }
 
-    setAuthState({
-      user: {
+      const userPayload = {
         id: userData.id,
         username: userData.username,
         role: userData.role,
         firstName: userData.firstName,
         lastName: userData.lastName,
-      },
-      isLoading: false,
-      error: null,
-      isAuthenticated: true
-    });
+        profilePicture: userData.profilePicture
+      };
 
-    return true;
-  } catch (err) {
-    console.error('فشل التحقق من المصادقة:', err);
-    localStorage.removeItem('accessToken');
-    setAuthState(prev => ({
-      ...prev,
-      user: null,
-      isLoading: false,
-      error: err.message,
-      isAuthenticated: false
-    }));
-    return false;
-  }
-}, []);
+      setAuthState({
+        user: userPayload,
+        isLoading: false,
+        error: null,
+        isAuthenticated: true
+      });
 
+      return true;
+    } catch (err) {
+      console.error('فشل التحقق من المصادقة:', err);
+      localStorage.removeItem('accessToken');
+      setAuthState(prev => ({
+        ...prev,
+        user: null,
+        isLoading: false,
+        error: err.message,
+        isAuthenticated: false
+      }));
+      return false;
+    }
+  }, []);
 
-  // تهيئة حالة المصادقة عند التحميل
+  // تحديث ملف المستخدم
+  const updateUserProfile = useCallback(async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/user/my-profile');
+      const userData = response.data;
+
+      setAuthState(prev => ({
+        ...prev,
+        user: {
+          ...prev.user,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profilePicture: userData.profilePicture
+        }
+      }));
+    } catch (error) {
+      console.error('فشل في تحديث ملف المستخدم:', error);
+    }
+  }, []);
+
+  // تهيئة الحالة عند التحميل
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setAuthState(prev => ({
-          ...prev,
-          isLoading: false
-        }));
+        setAuthState(prev => ({ ...prev, isLoading: false }));
         return;
       }
       await checkUserLoggedIn();
     };
-  
     initializeAuth();
   }, [checkUserLoggedIn]);
-  
+
   // تسجيل الدخول
   const login = async (credentials) => {
-  try {
-    setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-    
-    const response = await axios.post('http://localhost:8080/auth/login', credentials);
-    const { accessToken, refreshToken, user: userData } = response.data;
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
 
-    if (!accessToken || !userData) {
-      throw new Error('استجابة تسجيل الدخول غير صالحة');
-    }
+      const response = await axios.post('http://localhost:8080/auth/login', credentials);
+      const { accessToken, refreshToken, user: userData } = response.data;
 
-    localStorage.setItem('accessToken', accessToken);
-    if (refreshToken) {
-      localStorage.setItem('refreshToken', refreshToken);
-    }
+      if (!accessToken || !userData) {
+        throw new Error('استجابة تسجيل الدخول غير صالحة');
+      }
 
-    const userPayload = {
-      id: userData.id,
-      username: userData.username,
-      role: userData.role,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-    };
+      localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
 
-    setAuthState({
-      user: userPayload,
-      isLoading: false,
-      error: null,
-      isAuthenticated: true
-    });
+      const userPayload = {
+        id: userData.id,
+        username: userData.username,
+        role: userData.role,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profilePicture: userData.profilePicture
+      };
 
-    // إضافة هذا السطر للتأكد من تحديث رأس الطلبات
-    axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      setAuthState({
+        user: userPayload,
+        isLoading: false,
+        error: null,
+        isAuthenticated: true
+      });
 
-    return { success: true, user: userPayload };
-  } catch (err) {
+      return { success: true, user: userPayload };
+    } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
       console.error('خطأ في تسجيل الدخول:', errorMessage);
       setAuthState(prev => ({
@@ -181,9 +190,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-      
       const response = await axios.post('http://localhost:8080/auth/register', userData);
-      
       setAuthState(prev => ({ ...prev, isLoading: false }));
       return { success: true, data: response.data };
     } catch (err) {
@@ -210,20 +217,30 @@ export const AuthProvider = ({ children }) => {
     navigate('/login', { replace: true });
   }, [navigate]);
 
-  // قيمة السياق المذكرة
+  // القيمة النهائية للسياق
   const contextValue = useMemo(() => ({
     ...authState,
     login,
     register,
     logout,
-    checkUserLoggedIn
-  }), [authState, logout, checkUserLoggedIn]);
+    checkUserLoggedIn,
+    updateUserProfile
+  }), [authState, login, register, logout, checkUserLoggedIn, updateUserProfile]);
 
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+// Hook لاستخدام السياق
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
 
 export { AuthContext };

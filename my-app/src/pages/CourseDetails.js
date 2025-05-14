@@ -1147,10 +1147,7 @@ const AssignmentsTab = ({ courseId, userRole }) => {
                           <CalendarIcon className="h-4 w-4 mr-1 text-gray-400" />
                           <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
                         </div>
-                        <div className="flex items-center bg-gray-50 px-3 py-1 rounded-full shadow-sm">
-                          <ClockIcon className="h-4 w-4 mr-1 text-gray-400" />
-                          <span>{assignment.totalMarks} points</span>
-                        </div>
+                      
                       </div>
 
                       {userRole === 'STUDENT' && assignment.hasSubmitted && (
@@ -1525,6 +1522,7 @@ const navigate = useNavigate();
  }
  };
  const handleDeleteQuiz = async (quizId) => {
+  // eslint-disable-next-line no-restricted-globals
  if (!confirm('Are you sure you want to delete this quiz?')) return;
  
  try {

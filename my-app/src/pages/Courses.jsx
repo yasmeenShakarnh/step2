@@ -12,7 +12,6 @@ import {
   TrashIcon,
   UserPlusIcon
 } from '@heroicons/react/24/outline';
-// أضف هذا الاستيراد في أعلى الملف
 import CourseFormModal from './CourseFormModal.js';
 import AssignInstructorModal from './AssignInstructorModal.js';
 import { AuthContext } from '../context/AuthContext.js';
@@ -46,7 +45,7 @@ const Courses = () => {
       setError(null);
     } catch (err) {
       console.error('Error fetching courses:', err);
-      setError('Failed to fetch courses. Please try again later.');
+      setError('Failed to load courses. Please try again later.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -128,7 +127,7 @@ const Courses = () => {
       fetchCourses();
     } catch (err) {
       console.error('Assign self failed:', err);
-      setError('Could not assign yourself to this course. You may already be assigned or the course may not exist.');
+      setError('Failed to assign yourself to this course. You might already be assigned or the course doesn\'t exist.');
     }
   };
   
@@ -174,7 +173,7 @@ const Courses = () => {
       fetchEnrollments();
     } catch (err) {
       console.error('Unenrollment failed:', err);
-      setError('Could not unenroll from course.');
+      setError('Failed to unenroll from course.');
     }
   };
 
@@ -208,7 +207,7 @@ const Courses = () => {
       fetchEnrollments();
     } catch (err) {
       console.error('Enrollment failed:', err);
-      setError('Could not enroll in course. You may already be enrolled or the course may be full.');
+      setError('Failed to enroll in course. You might already be enrolled or the course is full.');
     }
   };
 
@@ -220,92 +219,99 @@ const Courses = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="h-12 w-12 rounded-full border-4 border-purple-500 border-t-transparent"
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+          className="h-16 w-16 rounded-full border-4 border-indigo-500 border-t-transparent"
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="max-w-7xl mx-auto"
       >
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <BookOpenIcon className="h-8 w-8 text-purple-600" />
-              Available Courses
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <BookOpenIcon className="h-9 w-9 text-indigo-600" />
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Available Courses
+              </span>
             </h1>
-            <p className="text-gray-600 mt-2">Explore our comprehensive learning programs</p>
+            <p className="text-gray-600 text-lg">Browse and manage all available learning programs</p>
           </div>
 
           <div className="flex gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all duration-200"
             >
-              <ArrowPathIcon className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <ArrowPathIcon className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
             </motion.button>
 
             {user?.role === 'ADMIN' && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   setEditingCourse(null);
                   setIsModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
+                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl shadow-sm text-sm font-medium hover:bg-indigo-700 transition-all duration-200"
               >
-                <PlusIcon className="h-4 w-4" />
+                <PlusIcon className="h-5 w-5" />
                 Add Course
               </motion.button>
             )}
           </div>
         </div>
 
+        {/* Error Message */}
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded"
+            className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg shadow-sm"
           >
-            <p>{error}</p>
+            <p className="font-medium">{error}</p>
           </motion.div>
         )}
 
+        {/* Courses Grid */}
         {courses.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-sm p-8 text-center"
+            className="bg-white rounded-2xl shadow-lg p-10 text-center"
           >
-            <AcademicCapIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No courses available</h3>
-            <p className="mt-1 text-gray-500">Check back later or contact support.</p>
+            <AcademicCapIcon className="mx-auto h-16 w-16 text-gray-300" />
+            <h3 className="mt-4 text-xl font-semibold text-gray-900">No courses available</h3>
+            <p className="mt-2 text-gray-500">Check back later or contact support for more information.</p>
             {user?.role === 'ADMIN' && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setIsModalOpen(true)}
-                className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="mt-6 px-6 py-2.5 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition-all duration-200"
               >
-                Create Your First Course
-              </button>
+                Create First Course
+              </motion.button>
             )}
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {courses.map((course) => {
               const isEnrolled = enrolledCourses.includes(course.id);
               const showAssignSelf = user?.role === 'INSTRUCTOR' && !course.instructor;
@@ -317,21 +323,21 @@ const Courses = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3 }}
-                  whileHover={{ y: -5 }}
-                  className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 transition-all relative ${
+                  whileHover={{ y: -8, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
+                  className={`bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100 transition-all duration-300 relative ${
                     isEnrolled || user?.role !== 'STUDENT' ? 'cursor-pointer hover:shadow-xl' : ''
                   }`}
                   onClick={() => handleCourseClick(course.id)}
                 >
                   {isAdmin && (
-                    <div className="absolute top-3 right-3 flex gap-2 z-10">
+                    <div className="absolute top-4 right-4 flex gap-2 z-10">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingCourse(course);
                           setIsModalOpen(true);
                         }}
-                        className="p-1.5 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200"
+                        className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm transition-colors"
                         title="Edit Course"
                       >
                         <PencilIcon className="h-4 w-4" />
@@ -342,7 +348,7 @@ const Courses = () => {
                           e.stopPropagation();
                           handleDeleteCourse(course.id);
                         }}
-                        className="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
+                        className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm transition-colors"
                         title="Delete Course"
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -354,7 +360,7 @@ const Courses = () => {
                           setCurrentCourse(course);
                           setIsAssignModalOpen(true);
                         }}
-                        className="p-1.5 bg-yellow-100 text-yellow-600 rounded-full hover:bg-yellow-200"
+                        className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 shadow-sm transition-colors"
                         title="Assign Instructor"
                       >
                         <UserPlusIcon className="h-4 w-4" />
@@ -363,66 +369,77 @@ const Courses = () => {
                   )}
 
                   <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 shadow-sm">
                         {course.category || 'General'}
                       </span>
-                      <span className="flex items-center text-sm text-gray-500">
-                        <ClockIcon className="h-4 w-4 mr-1" />
-                        {course.duration || 'N/A'} hrs
-                      </span>
+                      <div className="inline-flex items-center bg-blue-50 px-3 py-1 rounded-full shadow-sm">
+                        <ClockIcon className="h-4 w-4 mr-1.5 text-blue-600" />
+                        <span className="text-xs font-medium text-blue-700">
+                          {course.duration || '0'} hours
+                        </span>
+                      </div>
                     </div>
 
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">{course.title}</h3>
 
-                    <p className="text-gray-600 mb-4 line-clamp-3">{course.description}</p>
+                    <p className="text-gray-600 mb-5 line-clamp-3 leading-relaxed">{course.description}</p>
 
-                    <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center">
-  <div className="h-8 w-8 rounded-full bg-purple-200 flex items-center justify-center text-purple-600 font-medium">
-    {course.instructor?.firstName?.charAt(0) || 'I'}
-  </div>
-  <div className="ml-2 text-sm font-medium text-gray-700">
-    {course.instructor?.firstName ? 
-      `${course.instructor.firstName}${course.instructor.lastName ? ' ' + course.instructor.lastName : ''}` 
-      : 'No Instructor'}
-  </div>
-</div>
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+                      <div className="flex items-center">
+                        <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium shadow-inner">
+                          {course.instructor?.firstName?.charAt(0) || 'I'}
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-gray-700">
+                            {course.instructor?.firstName ? 
+                              `${course.instructor.firstName}${course.instructor.lastName ? ' ' + course.instructor.lastName : ''}` 
+                              : 'No instructor'}
+                          </p>
+                          <p className="text-xs text-gray-500">Instructor</p>
+                        </div>
+                      </div>
 
                       <div className="flex gap-2">
                         {showAssignSelf && (
-                          <button
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleAssignSelf(course.id);
                             }}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                            className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm shadow-sm transition-colors"
                           >
-                            Assign Self
-                          </button>
+                            Assign Yourself
+                          </motion.button>
                         )}
 
                         {user?.role === 'STUDENT' && (
                           isEnrolled ? (
-                            <button
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleUnenroll(course.id);
                               }}
-                              className="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm"
+                              className="px-4 py-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-sm shadow-sm transition-colors"
                             >
                               Unenroll
-                            </button>
+                            </motion.button>
                           ) : (
-                            <button
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleEnroll(course.id);
                               }}
-                              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                              className="px-4 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm shadow-sm transition-colors"
                             >
                               Enroll
-                            </button>
+                            </motion.button>
                           )
                         )}
                       </div>
@@ -436,18 +453,18 @@ const Courses = () => {
       </motion.div>
 
       <CourseFormModal
-  isOpen={isModalOpen}
-  setIsOpen={setIsModalOpen}
-  onCreate={handleCreateCourse}
-  onUpdate={handleUpdateCourse}
-  course={editingCourse}
-  onClose={() => {
-    setIsModalOpen(false);
-    setEditingCourse(null);
-  }}
-/>
+        isOpen={isModalOpen}
+        setIsOpen={setIsModalOpen}
+        onCreate={handleCreateCourse}
+        onUpdate={handleUpdateCourse}
+        course={editingCourse}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingCourse(null);
+        }}
+      />
 
-<AssignInstructorModal
+      <AssignInstructorModal
         isOpen={isAssignModalOpen}
         setIsOpen={setIsAssignModalOpen}
         onAssign={handleAssignInstructor}

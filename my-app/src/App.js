@@ -12,9 +12,7 @@ import CreateCourseModal from './pages/CourseFormModal.js';
 import AssignmentSubmission from './pages/AssignmentSubmission.js';
 import TakeQuiz from './pages/QuizTakingPage.js'; // Added the missing import
 import CreateAssignment from './pages/CreateAssignment.js';
-import NotificationBell from './pages/NotificationBell.js';
 import CourseFormModal from './pages/CourseFormModal.js';
-import OAuthRedirect  from './pages/OAuthRedirect.jsx';
 import QuizPage from './pages/QuizPage.js';
 import CreateQuizPage from './pages/CreateQuiz.jsx';
 
@@ -46,7 +44,6 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/oauth-redirect" element={<OAuthRedirect />} />
 
       <Route element={<PrivateRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
@@ -54,7 +51,6 @@ function App() {
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:courseId" element={<CourseDetails />} />
         <Route path="/courses/:courseId/create-assignment" element={<CreateAssignment />} />
-        <Route path="/NotificationBell" element={<NotificationBell />} />
         <Route path="/CourseFormModal" element={<CourseFormModal />} />
 
 

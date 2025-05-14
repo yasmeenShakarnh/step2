@@ -3,21 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   AppBar, Toolbar, Typography, Drawer, List, ListItem, 
   ListItemIcon, ListItemText, Box, Grid, Card, CardContent, 
-  Avatar, IconButton, Divider, Menu, MenuItem, Badge,
-  Popover, ListItemAvatar, Chip, Button, LinearProgress
+  IconButton, Divider, Menu, MenuItem, Badge,
+  Popover, Chip, Button, LinearProgress
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
   School as SchoolIcon,
-  People as PeopleIcon,
-  Assignment as AssignmentIcon,
-  VideoLibrary as VideoLibraryIcon,
-  Settings as SettingsIcon,
+  Notifications as NotificationsIcon,
   Menu as MenuIcon,
   Logout as LogoutIcon,
-  AccountCircle as AccountCircleIcon,
-  Notifications as NotificationsIcon,
-  Circle as CircleIcon
+  AccountCircle as AccountCircleIcon
 } from '@mui/icons-material';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
@@ -102,28 +97,6 @@ const Dashboard = () => {
     setNotificationsAnchorEl(null);
   };
 
-  const markAsRead = async (id) => {
-    try {
-      await axios.patch(`http://localhost:8080/notifications/${id}/read`);
-      setNotifications(notifications.map(n => 
-        n.id === id ? {...n, read: true} : n
-      ));
-      setUnreadCount(unreadCount - 1);
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      await axios.patch('http://localhost:8080/notifications/mark-all-read');
-      setNotifications(notifications.map(n => ({...n, read: true})));
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-    }
-  };
-
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -135,6 +108,7 @@ const Dashboard = () => {
 
   const handleProfileClick = () => {
     navigate('/profile');
+    handleClose();
   };
 
   const drawer = (
@@ -321,7 +295,7 @@ const Dashboard = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="h6">Notifications</Typography>
                   {unreadCount > 0 && (
-                    <Button size="small" onClick={markAllAsRead}>
+                    <Button size="small">
                       Mark all as read
                     </Button>
                   )}
@@ -339,11 +313,6 @@ const Dashboard = () => {
                           borderRadius: 1
                         }}
                       >
-                        <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
-                            <SchoolIcon />
-                          </Avatar>
-                        </ListItemAvatar>
                         <ListItemText
                           primary={
                             <Typography variant="subtitle1" fontWeight="bold">
@@ -391,22 +360,10 @@ const Dashboard = () => {
             <IconButton
               size="large"
               aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
               onClick={handleMenu}
               color="inherit"
             >
-              <Avatar 
-                alt={`${user?.firstName || ''} ${user?.lastName || ''}`}
-                src={user?.profilePicture ? `http://localhost:8080/uploads/profile-pictures/${user.profilePicture}` : undefined}
-                sx={{ 
-                  bgcolor: user?.profilePicture ? 'transparent' : 'primary.main',
-                  width: 32,
-                  height: 32
-                }}
-              >
-                {!user?.profilePicture && `${user?.firstName?.charAt(0) || ''}${user?.lastName?.charAt(0) || ''}`}
-              </Avatar>
+              <AccountCircleIcon />
             </IconButton>
             <Menu
               id="menu-appbar"
