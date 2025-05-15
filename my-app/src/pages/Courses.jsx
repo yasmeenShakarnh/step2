@@ -34,23 +34,48 @@ const Courses = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
 
-  const fetchCourses = useCallback(async () => {
-    try {
-      const response = await axios.get('http://localhost:8080/courses', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
-      setCourses(response.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching courses:', err);
-      setError('Failed to load courses. Please try again later.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+ const fetchCourses = useCallback(async () => {
+  try {
+    setLoading(true);
+    let url = 'http://localhost:8080/courses';
+    let params = {};
+
+    if (user?.role === 'INSTRUCTOR') {
+      // الطريقتين: إما نقطة نهاية خاصة أو فلترة من الخادم
+      url = 'http://localhost:8080/courses';
+      params = { instructorId: user.id }; // أرسل معرّف المدرس كبارامتر
     }
-  }, []);
+
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+      },
+      params
+    });
+
+    let filteredCourses = response.data;
+    
+    // إذا لم يكن هناك دعم للفلترة من الخادم، نقوم بالفلترة من الواجهة
+    if (user?.role === 'INSTRUCTOR') {
+      filteredCourses = response.data.filter(course => 
+        course.instructor && course.instructor.id === user.id
+      );
+    }
+    
+    setCourses(filteredCourses);
+    setError(null);
+  } catch (err) {
+    console.error('Error fetching courses:', err);
+    if (err.response?.status === 500) {
+      setError('Server error. Please contact administrator.');
+    } else {
+      setError('Failed to load courses. Please try again later.');
+    }
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+}, [user]);
 
   const fetchInstructors = useCallback(async () => {
     try {
@@ -91,7 +116,9 @@ const Courses = () => {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchCourses();
-    fetchEnrollments();
+    if (user?.role === 'STUDENT') {
+      fetchEnrollments();
+    }
     if (user?.role === 'ADMIN') {
       fetchInstructors();
     }
@@ -243,10 +270,14 @@ const Courses = () => {
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <BookOpenIcon className="h-9 w-9 text-indigo-600" />
               <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Available Courses
+                {user?.role === 'INSTRUCTOR' ? 'My Teaching Courses' : 'Available Courses'}
               </span>
             </h1>
-            <p className="text-gray-600 text-lg">Browse and manage all available learning programs</p>
+            <p className="text-gray-600 text-lg">
+              {user?.role === 'INSTRUCTOR' 
+                ? 'Courses assigned to you' 
+                : 'Browse and manage all available learning programs'}
+            </p>
           </div>
 
           <div className="flex gap-3">
@@ -297,8 +328,14 @@ const Courses = () => {
             className="bg-white rounded-2xl shadow-lg p-10 text-center"
           >
             <AcademicCapIcon className="mx-auto h-16 w-16 text-gray-300" />
-            <h3 className="mt-4 text-xl font-semibold text-gray-900">No courses available</h3>
-            <p className="mt-2 text-gray-500">Check back later or contact support for more information.</p>
+            <h3 className="mt-4 text-xl font-semibold text-gray-900">
+              {user?.role === 'INSTRUCTOR' ? 'No courses assigned to you yet' : 'No courses available'}
+            </h3>
+            <p className="mt-2 text-gray-500">
+              {user?.role === 'INSTRUCTOR' 
+                ? 'Please contact administrator to be assigned to courses' 
+                : 'Check back later or contact support for more information.'}
+            </p>
             {user?.role === 'ADMIN' && (
               <motion.button
                 whileHover={{ scale: 1.03 }}
@@ -314,7 +351,6 @@ const Courses = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {courses.map((course) => {
               const isEnrolled = enrolledCourses.includes(course.id);
-              const showAssignSelf = user?.role === 'INSTRUCTOR' && !course.instructor;
               const isAdmin = user?.role === 'ADMIN';
 
               return (
@@ -373,12 +409,7 @@ const Courses = () => {
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 shadow-sm">
                         {course.category || 'General'}
                       </span>
-                      <div className="inline-flex items-center bg-blue-50 px-3 py-1 rounded-full shadow-sm">
-                        <ClockIcon className="h-4 w-4 mr-1.5 text-blue-600" />
-                        <span className="text-xs font-medium text-blue-700">
-                          {course.duration || '0'} hours
-                        </span>
-                      </div>
+                     
                     </div>
 
                     <h3 className="text-xl font-bold text-gray-900 mb-3">{course.title}</h3>
@@ -401,20 +432,6 @@ const Courses = () => {
                       </div>
 
                       <div className="flex gap-2">
-                        {showAssignSelf && (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAssignSelf(course.id);
-                            }}
-                            className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm shadow-sm transition-colors"
-                          >
-                            Assign Yourself
-                          </motion.button>
-                        )}
-
                         {user?.role === 'STUDENT' && (
                           isEnrolled ? (
                             <motion.button

@@ -1560,81 +1560,106 @@ const navigate = useNavigate();
  </div>
  );
  }
- if (userRole === 'STUDENT') {
- return (
- <div className="space-y-8">
- <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 shadow-lg">
- <h1 className="text-3xl font-bold text-white mb-2">English Quizzes</h1>
- <p className="text-blue-100 text-lg">
- Test your knowledge with our interactive quizzes and track your progress!
- </p>
- </div>
- {quizzes.map((quiz) => (
- <motion.div
- key={quiz.id}
- initial={{ opacity: 0, y: 20 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ duration: 0.3 }}
- className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition￾shadow"
- >
- <div className="p-6">
- <div className="flex justify-between items-start">
- <div className="flex-1">
- <h3 className="text-xl font-bold text-gray-800 mb-2">{quiz.title}</h3>
- <p className="text-gray-600 mb-4">{quiz.description}</p>
- 
- <div className="flex items-center space-x-4 text-sm">
- <div className="flex items-center text-blue-600">
- <CalendarIcon className="h-5 w-5 mr-1" />
- <span>{new Date(quiz.startTime).toLocaleDateString()}</span>
- </div>
- <div className="flex items-center text-purple-600">
- <ClockIcon className="h-5 w-5 mr-1" />
- <span>{new Date(quiz.startTime).toLocaleTimeString()}</span>
- </div>
- </div>
- </div>
- 
- <div className={`px-3 py-1 rounded-full text-sm font-medium ${
- quiz.isClosed ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
- }`}>
- {quiz.isClosed ? 'Closed' : 'Open'}
- </div>
- </div>
- {submissionStatus[quiz.id] ? (
- <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200 flex items-start">
- <CheckCircleIcon className="h-6 w-6 text-blue-500 mt-1 mr-3" />
- <div>
- <h4 className="text-blue-800 font-semibold">Quiz Completed</h4>
- <p className="text-blue-600 text-sm">You've successfully submitted this quiz</p>
- </div>
- </div>
- ) : quiz.isClosed ? (
- <div className="mt-6 bg-red-50 p-4 rounded-lg border border-red-200 flex items-start">
- <XCircleIcon className="h-6 w-6 text-red-500 mt-1 mr-3" />
- <div>
- <h4 className="text-red-800 font-semibold">Quiz Closed</h4>
- <p className="text-red-600 text-sm">The submission period has ended</p>
- </div>
- </div>
- ) : (
- <motion.button
- onClick={() => navigate(`/quiz/${quiz.id}`)}
- className="mt-6 w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded￾lg font-medium flex items-center justify-center space-x-2 hover:from-blue-600 hover:to-blue-700 
-transition-all"
- whileHover={{ scale: 1.02 }}
- whileTap={{ scale: 0.98 }}
- >
- <AcademicCapIcon className="h-5 w-5" />
- <span>Start Quiz Now</span>
- </motion.button>
- )}
- </div>
- </motion.div>
- ))}
- </div>
- );
- }
+
+  if (userRole === 'STUDENT') {
+    return (
+      <div className="space-y-8">
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 shadow-lg">
+          <h1 className="text-3xl font-bold text-white mb-2">English Quizzes</h1>
+          <p className="text-blue-100 text-lg">
+            Test your knowledge with our interactive quizzes and track your progress!
+          </p>
+        </div>
+        
+        {quizzes.map((quiz) => {
+          const currentTime = new Date();
+          const startTime = new Date(quiz.startTime);
+          const endTime = new Date(quiz.endTime);
+          const isQuizNotStarted = currentTime < startTime;
+          const isQuizClosed = quiz.isClosed || currentTime > endTime;
+          const isQuizActive = !isQuizNotStarted && !isQuizClosed;
+
+          return (
+            <motion.div
+              key={quiz.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{quiz.title}</h3>
+                    <p className="text-gray-600 mb-4">{quiz.description}</p>
+                    
+                    <div className="flex items-center space-x-4 text-sm">
+                      <div className="flex items-center text-blue-600">
+                        <CalendarIcon className="h-5 w-5 mr-1" />
+                        <span>{startTime.toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center text-purple-600">
+                        <ClockIcon className="h-5 w-5 mr-1" />
+                        <span>{startTime.toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    isQuizClosed ? 'bg-red-100 text-red-800' : 
+                    isQuizNotStarted ? 'bg-yellow-100 text-yellow-800' : 
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {isQuizClosed ? 'Closed' : 
+                     isQuizNotStarted ? 'Not Started' : 
+                     'Open'}
+                  </div>
+                </div>
+
+                {submissionStatus[quiz.id] ? (
+                  <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200 flex items-start">
+                    <CheckCircleIcon className="h-6 w-6 text-blue-500 mt-1 mr-3" />
+                    <div>
+                      <h4 className="text-blue-800 font-semibold">Quiz Completed</h4>
+                      <p className="text-blue-600 text-sm">You've successfully submitted this quiz</p>
+                    </div>
+                  </div>
+                ) : isQuizClosed ? (
+                  <div className="mt-6 bg-red-50 p-4 rounded-lg border border-red-200 flex items-start">
+                    <XCircleIcon className="h-6 w-6 text-red-500 mt-1 mr-3" />
+                    <div>
+                      <h4 className="text-red-800 font-semibold">Quiz Closed</h4>
+                      <p className="text-red-600 text-sm">The submission period has ended</p>
+                    </div>
+                  </div>
+                ) : isQuizNotStarted ? (
+                  <div className="mt-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200 flex items-start">
+                    <ClockIcon className="h-6 w-6 text-yellow-500 mt-1 mr-3" />
+                    <div>
+                      <h4 className="text-yellow-800 font-semibold">Quiz Not Started</h4>
+                      <p className="text-yellow-600 text-sm">
+                        This quiz will be available on {startTime.toLocaleDateString()} at {startTime.toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <motion.button
+                    onClick={() => navigate(`/quiz/${quiz.id}`)}
+                    className="mt-6 w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium flex items-center justify-center space-x-2 hover:from-blue-600 hover:to-blue-700 transition-all"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <AcademicCapIcon className="h-5 w-5" />
+                    <span>Start Quiz Now</span>
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    );
+  }
  return (
  <div className="space-y-8">
  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 shadow-lg">
