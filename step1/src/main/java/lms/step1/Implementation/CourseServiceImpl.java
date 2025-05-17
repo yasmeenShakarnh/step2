@@ -7,15 +7,18 @@ import lms.step1.DTO.CourseDTO;
 import lms.step1.Exception.CourseAlreadyExistsException;
 import lms.step1.Exception.CourseNotFoundException;
 import lms.step1.Enumeration.Role;
+import lms.step1.Model.Course;
 import lms.step1.Model.User;
+import lms.step1.Repository.CourseRepository;
 import lms.step1.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import lms.step1.Repository.CourseRepository;
+
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import lms.step1.Model.Course;
 
 @Slf4j
 @Service
@@ -64,7 +67,10 @@ public class CourseServiceImpl implements CourseService {
         Course updated = courseRepository.save(course);
         log.info("✅ Course updated successfully with ID: {}", updated.getId());
 
-        sendCourseUpdateNotification("boot83144@gmail.com", updated.getTitle(), updated.getDescription(), updated.getDuration());
+        // إرسال بريد إلكتروني للمدرب فقط في حال وجوده
+        Optional.ofNullable(updated.getInstructor()).ifPresent(instructor -> {
+            sendCourseUpdateNotification(instructor.getEmail(), updated.getTitle(), updated.getDescription(), updated.getDuration());
+        });
 
         return mapToDTO(updated);
     }
@@ -139,33 +145,36 @@ public class CourseServiceImpl implements CourseService {
         course.setInstructor(instructor);
         courseRepository.save(course);
         log.info("✅ Instructor {} assigned to course {}", instructor.getUsername(), course.getTitle());
+
+        // إرسال إشعار للمدرب
+        sendCourseUpdateNotification(instructor.getEmail(), course.getTitle(), course.getDescription(), course.getDuration());
     }
 
     @Override
-    public List<CourseDTO> getRecentCoursesForStudent(String username) {
-        log.info("Fetching recent courses for student: {}", username);
-        List<Course> courses = courseRepository.findRecentCoursesByStudent(username);
-        return courses.stream()
-            .map(this::mapToDTO)
-            .collect(Collectors.toList());
+    public List<CourseDTO> getRecentCourses(Pageable pageable) {
+        log.info("🕓 Fetching recent courses for admin");
+        return courseRepository.findRecentCourses(pageable)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<CourseDTO> getRecentCoursesForInstructor(String username) {
-        log.info("Fetching recent courses for instructor: {}", username);
-        List<Course> courses = courseRepository.findRecentCoursesByInstructor(username);
-        return courses.stream()
-            .map(this::mapToDTO)
-            .collect(Collectors.toList());
+    public List<CourseDTO> getRecentCoursesForStudent(String username, Pageable pageable) {
+        log.info("🧑‍🎓 Fetching recent courses for student: {}", username);
+        return courseRepository.findRecentCoursesByStudent(username, pageable)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<CourseDTO> getRecentCourses() {
-        log.info("Fetching recent courses for admin");
-        List<Course> courses = courseRepository.findTop5ByOrderByCreatedAtDesc();
-        return courses.stream()
-            .map(this::mapToDTO)
-            .collect(Collectors.toList());
+    public List<CourseDTO> getRecentCoursesForInstructor(String username, Pageable pageable) {
+        log.info("👨‍🏫 Fetching recent courses for instructor: {}", username);
+        return courseRepository.findRecentCoursesByInstructor(username, pageable)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     private CourseDTO mapToDTO(Course course) {
@@ -174,9 +183,7 @@ public class CourseServiceImpl implements CourseService {
                 .title(course.getTitle())
                 .description(course.getDescription())
                 .duration(course.getDuration())
+                .instructor(course.getInstructor())
                 .build();
     }
-    
-
-    
 }

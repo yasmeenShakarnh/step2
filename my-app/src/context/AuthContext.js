@@ -44,11 +44,12 @@ export const AuthProvider = ({ children }) => {
   // تسجيل الخروج التلقائي
   const handleAutoLogout = useCallback(() => {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     setAuthState(prev => ({
       ...prev,
       user: null,
       isAuthenticated: false,
-      error: 'انتهت جلسة العمل، يرجى تسجيل الدخول مرة أخرى'
+      error: 'Session expired. Please login again.'
     }));
     navigate('/login', { replace: true, state: { from: 'session-expired' } });
   }, [navigate]);
@@ -67,27 +68,17 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
 
-      const response = await axios.get('http://localhost:8080/auth/verify', {
+      const response = await axios.get('http://localhost:8080/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      const userData = response.data?.user;
+      const userData = response.data;
       if (!userData) {
-        localStorage.removeItem('accessToken');
-        throw new Error('بيانات المستخدم غير صالحة');
+        throw new Error('Invalid user data');
       }
 
-      const userPayload = {
-        id: userData.id,
-        username: userData.username,
-        role: userData.role,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        profilePicture: userData.profilePicture
-      };
-
       setAuthState({
-        user: userPayload,
+        user: userData,
         isLoading: false,
         error: null,
         isAuthenticated: true
@@ -95,8 +86,9 @@ export const AuthProvider = ({ children }) => {
 
       return true;
     } catch (err) {
-      console.error('فشل التحقق من المصادقة:', err);
+      console.error('Authentication check failed:', err);
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       setAuthState(prev => ({
         ...prev,
         user: null,
@@ -147,36 +139,28 @@ export const AuthProvider = ({ children }) => {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
 
       const response = await axios.post('http://localhost:8080/auth/login', credentials);
-      const { accessToken, refreshToken, user: userData } = response.data;
+      const { access_token, refresh_token, user: userData } = response.data;
 
-      if (!accessToken || !userData) {
-        throw new Error('استجابة تسجيل الدخول غير صالحة');
+      if (!access_token || !userData) {
+        throw new Error('Invalid login response');
       }
 
-      localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-
-      const userPayload = {
-        id: userData.id,
-        username: userData.username,
-        role: userData.role,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        profilePicture: userData.profilePicture
-      };
+      localStorage.setItem('accessToken', access_token);
+      if (refresh_token) {
+        localStorage.setItem('refreshToken', refresh_token);
+      }
 
       setAuthState({
-        user: userPayload,
+        user: userData,
         isLoading: false,
         error: null,
         isAuthenticated: true
       });
 
-      return { success: true, user: userPayload };
+      return { success: true, user: userData };
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
-      console.error('خطأ في تسجيل الدخول:', errorMessage);
+      console.error('Login error:', errorMessage);
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
@@ -195,7 +179,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true, data: response.data };
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
-      console.error('خطأ في التسجيل:', errorMessage);
+      console.error('Registration error:', errorMessage);
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
@@ -208,6 +192,7 @@ export const AuthProvider = ({ children }) => {
   // تسجيل الخروج
   const logout = useCallback(() => {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     setAuthState({
       user: null,
       isLoading: false,

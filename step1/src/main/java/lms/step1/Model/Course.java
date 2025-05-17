@@ -1,11 +1,10 @@
+// Course.java
 package lms.step1.Model;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,9 +22,7 @@ public class Course {
     private Long id;
 
     private String title;
-
     private String description;
-
     private int duration;
 
     @Column(name = "created_at")
@@ -44,6 +41,7 @@ public class Course {
     @JsonManagedReference
     private List<Assignment> assignments;
 
+    // تم توحيد اسم العلاقة مع Enrollment
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Enrollment> enrollments;

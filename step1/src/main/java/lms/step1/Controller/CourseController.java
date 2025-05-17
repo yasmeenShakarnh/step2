@@ -8,27 +8,23 @@ import lms.step1.Model.User;
 import lms.step1.Repository.UserRepository;
 import lms.step1.Service.CourseService;
 import lms.step1.Service.EmailService;
-import lms.step1.Enumeration.*;
+import lms.step1.Enumeration.Role;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lms.step1.Repository.CourseRepository; // تأكد من وجود هذا الاستيراد
+import lms.step1.Repository.CourseRepository;
 
-
-import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import lms.step1.Enumeration.Role;  // Correct import
-
 
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
@@ -43,21 +39,20 @@ public class CourseController {
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
 
-
-    @PreAuthorize("hasAnyAuthority('ADMIN','INSTRUCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PostMapping
     public ResponseEntity<EntityModel<CourseDTO>> createCourse(@Valid @RequestBody CourseDTO courseDTO) {
-        log.info("📚 Creating new course with title: {}", courseDTO.getTitle());
+        log.info("Creating new course with title: {}", courseDTO.getTitle());
         CourseDTO created = courseService.createCourse(courseDTO);
-        log.info("✅ Course created with ID: {}", created.getId());
+        log.info("Course created with ID: {}", created.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(addLinks(created));
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN','INSTRUCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<CourseDTO>> updateCourse(@PathVariable Long id,
                                                                @RequestBody CourseDTO courseDTO) {
-        log.info("✏️ Updating course with ID: {}", id);
+        log.info("Updating course with ID: {}", id);
         CourseDTO updated = courseService.updateCourse(id, courseDTO);
 
         emailService.sendEmail(
@@ -65,38 +60,35 @@ public class CourseController {
                 "Course Updated",
                 "The course with ID " + id + " has been updated successfully."
         );
-        log.info("📩 Email sent about course update. ID: {}", id);
+        log.info("Email sent about course update. ID: {}", id);
 
         return ResponseEntity.ok(addLinks(updated));
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN','INSTRUCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<EntityModel<MessageDTO>> deleteCourse(@PathVariable Long id) {
-        log.warn("🗑️ Deleting course with ID: {}", id);
+        log.warn("Deleting course with ID: {}", id);
         courseService.deleteCourse(id);
-        MessageDTO message = new MessageDTO("✅ Course deleted successfully");
+        MessageDTO message = new MessageDTO("Course deleted successfully");
         EntityModel<MessageDTO> model = EntityModel.of(message);
         model.add(linkTo(methodOn(CourseController.class).getAllCourses()).withRel("all-courses"));
         return ResponseEntity.ok(model);
     }
 
-
     @GetMapping("/{id}")
     public ResponseEntity<EntityModel<CourseDTO>> getCourseById(@PathVariable Long id) {
-        log.info("🔍 Fetching course by ID: {}", id);
+        log.info("Fetching course by ID: {}", id);
         CourseDTO course = courseService.getCourseById(id);
         return ResponseEntity.ok(addLinks(course));
     }
 
-   
-
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/assign-instructor")
     public ResponseEntity<EntityModel<MessageDTO>> assignInstructor(@Valid @RequestBody AssignInstructorDTO request) {
-        log.info("🧑‍🏫 Admin assigning instructor ID {} to course ID {}", request.getInstructorId(), request.getCourseId());
+        log.info("Admin assigning instructor ID {} to course ID {}", request.getInstructorId(), request.getCourseId());
         courseService.assignInstructor(request);
-        MessageDTO message = new MessageDTO("✅ Instructor assigned to course.");
+        MessageDTO message = new MessageDTO("Instructor assigned to course.");
         EntityModel<MessageDTO> response = EntityModel.of(message);
         response.add(linkTo(methodOn(CourseController.class).getCourseById(request.getCourseId())).withRel("course"));
         return ResponseEntity.ok(response);
@@ -108,51 +100,73 @@ public class CourseController {
         model.add(linkTo(methodOn(CourseController.class).getAllCourses()).withRel("all-courses"));
         return model;
     }
-    
- 
 
- @PreAuthorize("hasAuthority('ADMIN')")
-@GetMapping("/users/instructors")
-public ResponseEntity<List<User>> getAllInstructors() {
-    log.info("📋 Fetching all instructors");
-    List<User> instructors = userRepository.findByRole(Role.INSTRUCTOR);  // Now using the correct enum
-    return ResponseEntity.ok(instructors);
-}
-@GetMapping
-public ResponseEntity<List<CourseDTO>> getAllCourses() {
-    List<Course> courses = courseRepository.findAll();
-    List<CourseDTO> courseDTOs = courses.stream()
-        .map(course -> {
-            CourseDTO dto = new CourseDTO();
-            dto.setId(course.getId());
-            dto.setTitle(course.getTitle());
-            dto.setDescription(course.getDescription());
-            
-            if (course.getInstructor() != null) {
-                dto.setInstructor(course.getInstructor());
-            }
-            
-            return dto;
-        })
-        .collect(Collectors.toList());
-    
-    return ResponseEntity.ok(courseDTOs);
-}
-
-@GetMapping("/recent")
-public ResponseEntity<List<CourseDTO>> getRecentCourses(Authentication auth) {
-    log.info("🔍 Fetching recent courses for user: {}", auth.getName());
-    List<CourseDTO> courses;
-    
-    if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_STUDENT"))) {
-        courses = courseService.getRecentCoursesForStudent(auth.getName());
-    } else if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_INSTRUCTOR"))) {
-        courses = courseService.getRecentCoursesForInstructor(auth.getName());
-    } else {
-        courses = courseService.getRecentCourses();
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/users/instructors")
+    public ResponseEntity<List<User>> getAllInstructors() {
+        log.info("Fetching all instructors");
+        List<User> instructors = userRepository.findByRole(Role.INSTRUCTOR);
+        return ResponseEntity.ok(instructors);
     }
-    
-    return ResponseEntity.ok(courses);
-}
 
+    @GetMapping
+    public ResponseEntity<List<CourseDTO>> getAllCourses() {
+        List<Course> courses = courseRepository.findAll();
+        List<CourseDTO> courseDTOs = courses.stream()
+            .map(course -> {
+                CourseDTO dto = new CourseDTO();
+                dto.setId(course.getId());
+                dto.setTitle(course.getTitle());
+                dto.setDescription(course.getDescription());
+                if (course.getInstructor() != null) {
+                    dto.setInstructor(course.getInstructor());
+                }
+                return dto;
+            })
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(courseDTOs);
+    }
+
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    @GetMapping("/instructor")
+    public ResponseEntity<List<CourseDTO>> getInstructorCourses(Authentication auth) {
+        log.info("Fetching courses for instructor: {}", auth.getName());
+        try {
+            List<CourseDTO> courses = courseService.getRecentCoursesForInstructor(auth.getName(), PageRequest.of(0, 10));
+            return ResponseEntity.ok(courses);
+        } catch (Exception e) {
+            log.error("Error fetching instructor courses: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<?> getRecentCourses(Authentication auth) {
+        log.info("Fetching recent courses for user: {}", auth.getName());
+
+        List<CourseDTO> courses;
+        String username = auth.getName();
+
+        if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_STUDENT"))) {
+            courses = courseService.getRecentCoursesForStudent(username, PageRequest.of(0, 5));
+            if (courses.isEmpty()) {
+                return ResponseEntity.ok().body(new MessageDTO("You are not enrolled in any courses yet. Explore available courses."));
+            }
+        } else if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_INSTRUCTOR"))) {
+            courses = courseService.getRecentCoursesForInstructor(username, PageRequest.of(0, 5));
+            if (courses.isEmpty()) {
+                return ResponseEntity.ok().body(new MessageDTO("You have not created or been assigned to any courses yet."));
+            }
+        } else if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            courses = courseService.getRecentCourses(PageRequest.of(0, 4));
+            if (courses.isEmpty()) {
+                return ResponseEntity.ok().body(new MessageDTO("No courses have been created in the system yet."));
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new MessageDTO("Unauthorized access."));
+        }
+
+        return ResponseEntity.ok(courses);
+    }
 }

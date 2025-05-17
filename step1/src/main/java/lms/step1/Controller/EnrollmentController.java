@@ -27,7 +27,7 @@ public class EnrollmentController {
     private final EnrollmentService enrollmentService;
     private final CourseService courseService;
 
-    @PreAuthorize("hasAuthority('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT')")
     @GetMapping("/available-courses")
     public ResponseEntity<List<EntityModel<CourseDTO>>> getAvailableCourses() {
         log.info("[GET] /enrollments/available-courses - Fetching available courses");
@@ -42,7 +42,7 @@ public class EnrollmentController {
         return ResponseEntity.ok(models);
     }
 
-    @PreAuthorize("hasAuthority('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/enroll")
     public ResponseEntity<EntityModel<MessageResponse>> enroll(@RequestBody EnrollmentDTO dto, Authentication auth) {
         String username = auth.getName();
@@ -54,7 +54,7 @@ public class EnrollmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(model);
     }
 
-    @PreAuthorize("hasAuthority('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT')")
     @DeleteMapping("/unenroll")
     public ResponseEntity<EntityModel<MessageResponse>> unenroll(@RequestBody EnrollmentDTO dto, Authentication auth) {
         String username = auth.getName();
@@ -66,7 +66,7 @@ public class EnrollmentController {
         return ResponseEntity.ok(model);
     }
 
-    @PreAuthorize("hasAuthority('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT')")
     @PatchMapping("/mark-complete")
     public ResponseEntity<EntityModel<MessageResponse>> markComplete(@RequestBody EnrollmentDTO dto, Authentication auth) {
         String username = auth.getName();
@@ -78,7 +78,7 @@ public class EnrollmentController {
         return ResponseEntity.ok(model);
     }
 
-    @PreAuthorize("hasAuthority('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT')")
     @GetMapping("/my-courses")
     public ResponseEntity<List<EntityModel<EnrollmentStatusDTO>>> getMyEnrollments(Authentication auth) {
         String username = auth.getName();
@@ -94,7 +94,7 @@ public class EnrollmentController {
         return ResponseEntity.ok(models);
     }
 
-    @PreAuthorize("hasAuthority('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT')")
     @GetMapping("/my-courses/{courseId}")
     public ResponseEntity<EntityModel<EnrollmentStatusDTO>> getMyEnrollmentForCourse(@PathVariable Long courseId,
                                                                                     Authentication auth) {
@@ -106,7 +106,7 @@ public class EnrollmentController {
         return ResponseEntity.ok(model);
     }
 
-    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
     @GetMapping("/course/{courseId}")
     public ResponseEntity<List<EntityModel<EnrollmentStatusDTO>>> getCourseEnrollments(@PathVariable Long courseId,
                                                                                       Authentication auth) {
@@ -123,7 +123,7 @@ public class EnrollmentController {
         return ResponseEntity.ok(models);
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'INSTRUCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     @PostMapping("/enroll-student")
     public ResponseEntity<EntityModel<MessageResponse>> enrollStudentByAdminOrInstructor(
             @RequestBody EnrollStudentDTO dto, Authentication auth) {
@@ -137,7 +137,7 @@ public class EnrollmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(model);
     }
 
-    @PreAuthorize("hasAuthority('INSTRUCTOR')")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     @DeleteMapping("/remove-student")
     public ResponseEntity<EntityModel<MessageResponse>> removeStudent(@RequestBody RemoveStudentDTO dto,
                                                                      Authentication auth) {

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
-
+long count(); 
     Optional<Enrollment> findByStudentAndCourse(User student, Course course);
 
     List<Enrollment> findByStudent(User student);

@@ -1,13 +1,11 @@
 package lms.step1.Exception;
 
-import org.springframework.security.core.AuthenticationException;
-
-/**
- * Custom exception thrown when a JWT token is invalid, malformed, expired, or unsupported.
- */
-public class InvalidTokenException extends AuthenticationException {
-    
+public class InvalidTokenException extends RuntimeException {
     public InvalidTokenException(String message) {
         super(message);
+    }
+
+    public InvalidTokenException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

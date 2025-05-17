@@ -1,5 +1,5 @@
+// Enrollment.java
 package lms.step1.Model;
-
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -18,13 +18,22 @@ public class Enrollment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    private boolean completed;
+    @Column(nullable = false)
+    private boolean completed = false;
 
-    private LocalDate enrolledAt;
-} 
+    @Column(name = "enrolled_at", nullable = false, updatable = false)
+    private LocalDate enrolledAt; // تم تغيير الاسم إلى enrolledAt
+
+    @PrePersist
+    protected void onCreate() {
+        enrolledAt = LocalDate.now();
+    }
+}
