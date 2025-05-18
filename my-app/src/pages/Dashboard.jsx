@@ -23,8 +23,9 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon
 } from '@mui/icons-material';
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../context/AuthContext.js';
 import axios from 'axios';
+import InfoIcon from '@mui/icons-material/Info';
 
 const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -156,36 +157,44 @@ const Dashboard = () => {
             }
           }
         }
-        else if (user?.role === 'STUDENT') {
-          try {
-            console.log('Fetching student courses...');
-            const enrollmentsRes = await axios.get('http://localhost:8080/enrollments/my-courses', {
-              headers
-            });
+ else if (user?.role === 'STUDENT') {
+  try {
+    console.log('Fetching student courses...');
+    const enrollmentsRes = await axios.get('http://localhost:8080/enrollments/my-courses', {
+      headers
+    });
 
-            console.log('Enrollments response:', enrollmentsRes);
+    console.log('Raw enrollments data:', enrollmentsRes.data);
+    
+    if (enrollmentsRes.status === 200) {
+      const coursesData = enrollmentsRes.data.map(e => ({
+        id: e.courseId, // استخدام courseId بدلاً من id
+        enrollmentId: e.id, // معرف التسجيل
+        name: e.courseTitle || `Course ${e.courseId}`, // استخدام courseTitle بدلاً من course.name
+        // لا توجد بيانات المدرس في الرد، لذا نستخدم قيم افتراضية
+        instructorFirstName: 'Unknown',
+        instructorLastName: 'Instructor',
+        instructorId: null,
+        completed: e.completed,
+        enrolledAt: e.enrolledAt,
+        rawData: e // حفظ البيانات الخام لأغراض التصحيح
+      }));
 
-            if (enrollmentsRes.status === 200) {
-              const coursesData = enrollmentsRes.data.map(e => ({
-                ...e.course,
-                instructorFirstName: e.course.instructor?.firstName,
-                instructorLastName: e.course.instructor?.lastName,
-                instructorId: e.course.instructor?.id
-              }));
-              setCourses(coursesData);
-            } else {
-              console.error('Error fetching student courses:', enrollmentsRes.data);
-              setError('Failed to fetch courses: ' + (enrollmentsRes.data?.message || 'Unknown error'));
-            }
-          } catch (error) {
-            console.error('Error fetching student courses:', error);
-            setError('Failed to fetch courses: ' + (error.response?.data?.message || error.message));
-            if (error.response?.status === 401) {
-              localStorage.removeItem('accessToken');
-              navigate('/login');
-            }
-          }
-        }
+      console.log('Processed courses data:', coursesData);
+      setCourses(coursesData);
+    } else {
+      console.error('Error response:', enrollmentsRes);
+      setError('Failed to fetch courses: ' + (enrollmentsRes.data?.message || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Error details:', error.response?.data || error.message);
+    setError('Failed to fetch courses: ' + (error.response?.data?.message || error.message));
+    if (error.response?.status === 401) {
+      localStorage.removeItem('accessToken');
+      navigate('/login');
+    }
+  }
+}
       } catch (error) {
         console.error('Error in fetchData:', error);
         setError('An unexpected error occurred: ' + error.message);
@@ -196,11 +205,10 @@ const Dashboard = () => {
       }
     };
 
-    if (user) {
-      fetchData();
-    }
-  }, [user, navigate]);
-
+   if (user && user.role) { // تأكد من وجود user و role
+    fetchData();
+  }
+}, [user?.role, navigate]);
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -731,24 +739,24 @@ const Dashboard = () => {
               <Typography variant="h6" gutterBottom>
                 My Students
               </Typography>
-              <TableContainer component={Paper} sx={{ mt: 2 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Student Name</TableCell>
-                      <TableCell>Course</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {students.map((student) => (
-                      <TableRow key={student.id}>
-                        <TableCell>{`${student.firstName} ${student.lastName}`}</TableCell>
-                        <TableCell>{student.courseName}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+         <TableContainer component={Paper} sx={{ mt: 2 }}>
+  <Table>
+    <TableHead>
+      <TableRow>
+        <TableCell>Course Name</TableCell>
+        <TableCell>Instructor</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {courses.map((course) => (
+        <TableRow key={course.id}>
+          <TableCell>{course.name}</TableCell>
+          <TableCell>{`${course.instructorFirstName} ${course.instructorLastName}`}</TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</TableContainer>
             </CardContent>
           </Card>
         </Grid>
@@ -757,78 +765,101 @@ const Dashboard = () => {
   );
 
   const renderStudentDashboard = () => (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Grid container spacing={3}>
-        {/* Counters */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ 
-            height: '100%', 
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-          }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <SchoolIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Professors
-              </Typography>
-              <Typography variant="h4" color="primary">
-                {new Set(courses.map(course => course.instructorId)).size}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ 
-            height: '100%', 
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-          }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <ClassIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                My Courses
-              </Typography>
-              <Typography variant="h4" color="primary">
-                {courses.length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+  <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Grid container spacing={3}>
+      {/* Counters */}
+      <Grid item xs={12} md={6}>
+        <Card sx={{ 
+          height: '100%', 
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+        }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              <SchoolIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              Professors
+            </Typography>
+            <Typography variant="h4" color="primary">
+              {new Set(courses.map(course => course.instructorId)).size}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <Card sx={{ 
+          height: '100%', 
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+        }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              <ClassIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              My Courses
+            </Typography>
+            <Typography variant="h4" color="primary">
+              {courses.length}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
 
-        {/* Courses List */}
-        <Grid item xs={12}>
-          <Card sx={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-          }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                My Courses
-              </Typography>
+      {/* Courses List */}
+      <Grid item xs={12}>
+        <Card sx={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+        }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              My Courses
+            </Typography>
+            {courses.length === 0 ? (
+              <Alert severity="info">You are not enrolled in any courses yet.</Alert>
+            ) : (
               <TableContainer component={Paper} sx={{ mt: 2 }}>
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Course Name</TableCell>
-                      <TableCell>Instructor</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Course Name</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Enrolled At</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {courses.map((course) => (
-                      <TableRow key={course.id}>
-                        <TableCell>{course.name}</TableCell>
-                        <TableCell>{`${course.instructorFirstName} ${course.instructorLastName}`}</TableCell>
+                      <TableRow 
+                        key={`${course.id}-${course.enrollmentId}`}
+                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                      >
+                        <TableCell component="th" scope="row">
+                          {course.name}
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={course.completed ? 'Completed' : 'In Progress'} 
+                            color={course.completed ? 'success' : 'primary'}
+                            sx={{ fontWeight: 'medium' }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {new Date(course.enrolledAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+            )}
+          </CardContent>
+        </Card>
       </Grid>
-    </Box>
-  );
+    </Grid>
+  </Box>
+);
 
   return (
     <Box sx={{ display: 'flex', bgcolor: '#f8f9fa' }}>
