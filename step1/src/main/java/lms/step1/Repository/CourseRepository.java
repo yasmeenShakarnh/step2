@@ -7,11 +7,13 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 import lms.step1.Model.Course;
+import lms.step1.Model.User;
+
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
     boolean existsByTitle(String title);
     Optional<Course> findByInstructorId(Long instructorId);
-
+    long count();
     @Query("SELECT DISTINCT c FROM Course c " +
            "JOIN c.enrollments e " +
            "WHERE e.student.username = :username " +
@@ -24,4 +26,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     List<Course> findRecentCoursesByInstructor(@Param("username") String username);
 
     List<Course> findTop5ByOrderByCreatedAtDesc();
+    
+    List<Course> findByInstructor(User instructor);
 }

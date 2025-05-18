@@ -31,7 +31,7 @@ public class Course {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "instructor_id")
     private User instructor;
 
@@ -44,8 +44,8 @@ public class Course {
     @JsonManagedReference
     private List<Assignment> assignments;
 
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonManagedReference(value = "course-enrollments")
     private List<Enrollment> enrollments;
 
     @PrePersist

@@ -4,6 +4,7 @@ import lms.step1.Service.CourseService;
 import lms.step1.Service.EmailService;
 import lms.step1.DTO.AssignInstructorDTO;
 import lms.step1.DTO.CourseDTO;
+import lms.step1.DTO.StudentCourseDTO;
 import lms.step1.Exception.CourseAlreadyExistsException;
 import lms.step1.Exception.CourseNotFoundException;
 import lms.step1.Enumeration.Role;
@@ -16,10 +17,12 @@ import lms.step1.Repository.CourseRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lms.step1.Model.Course;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CourseServiceImpl implements CourseService {
 
     private final EmailService emailService;
@@ -166,6 +169,30 @@ public class CourseServiceImpl implements CourseService {
         return courses.stream()
             .map(this::mapToDTO)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<StudentCourseDTO> getInstructorStudents(String instructorUsername) {
+        try {
+            User instructor = userRepository.findByUsername(instructorUsername)
+                    .orElseThrow(() -> new RuntimeException("Instructor not found"));
+
+            List<Course> instructorCourses = courseRepository.findByInstructor(instructor);
+            
+            return instructorCourses.stream()
+                    .flatMap(course -> course.getEnrollments().stream()
+                            .map(enrollment -> new StudentCourseDTO(
+                                    enrollment.getStudent().getId(),
+                                    enrollment.getStudent().getFirstName(),
+                                    enrollment.getStudent().getLastName(),
+                                    course.getTitle(),
+                                    course.getId()
+                            )))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error fetching instructor students: " + e.getMessage());
+        }
     }
 
     private CourseDTO mapToDTO(Course course) {

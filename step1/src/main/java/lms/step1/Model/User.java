@@ -1,5 +1,6 @@
 package lms.step1.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lms.step1.Enumeration.Role;
 import lms.step1.Enumeration.Provider;
 import jakarta.persistence.*;
@@ -45,9 +46,12 @@ public class User implements UserDetails {
     @ToString.Exclude
     private List<Token> tokens;
 
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonManagedReference(value = "student-enrollments")
+    private List<Enrollment> enrollments;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-
         return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
