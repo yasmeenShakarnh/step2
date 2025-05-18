@@ -604,7 +604,6 @@ const EditResourceModal = ({ resource, onClose, onResourceUpdated }) => {
               <option value="VIDEO">Video</option>
               <option value="PDF">PDF</option>
               <option value="AUDIO">Audio</option>
-              <option value="QUIZ">Quiz</option>
             </select>
           </div>
 
@@ -1124,10 +1123,7 @@ const handleResourceUpdated = () => {
                             icon = <SpeakerWaveIcon className="h-5 w-5 text-purple-500" />;
                             actionLabel = 'Download Audio';
                             break;
-                          case 'QUIZ':
-                            icon = <PuzzlePieceIcon className="h-5 w-5 text-green-500" />;
-                            actionLabel = 'Take Quiz';
-                            break;
+                          
                           default:
                             icon = <DocumentTextIcon className="h-5 w-5 text-gray-500" />;
                             actionLabel = 'Download Resource';

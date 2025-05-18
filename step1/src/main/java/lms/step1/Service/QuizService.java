@@ -115,13 +115,7 @@ public class QuizService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public void deleteQuiz(Long quizId) {
-        if (!quizRepository.existsById(quizId)) {
-            throw new QuizNotFoundException(quizId);
-        }
-        quizRepository.deleteById(quizId);
-    }
+   
 
     @Transactional(readOnly = true)
     public List<SubmissionDTO> getQuizResults(Long quizId) {
@@ -378,5 +372,26 @@ public class QuizService {
             });
         }
     }
+@Transactional
+public void deleteQuiz(Long quizId) {
+    Quiz quiz = quizRepository.findById(quizId)
+            .orElseThrow(() -> new QuizNotFoundException(quizId));
+    
+    // حذف الدرجات المرتبطة بتقديمات هذا الكويز
+    List<QuizSubmission> submissions = submissionRepository.findByQuizId(quizId);
+    for (QuizSubmission submission : submissions) {
+        gradeRepository.findBySubmissionId(submission.getId())
+            .ifPresent(gradeRepository::delete);
+    }
+    
+    // حذف التقديمات
+    submissionRepository.deleteAll(submissions);
+    
+    // حذف الأسئلة المرتبطة
+    questionRepository.deleteAll(quiz.getQuestions());
+    
+    // وأخيرًا حذف الكويز نفسه
+    quizRepository.delete(quiz);
+}
 
 }

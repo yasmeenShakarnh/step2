@@ -193,41 +193,59 @@ public class LessonResourceController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ADMIN' , 'STUDENT')")
-    @PutMapping("/{resourceId}")
-    public ResponseEntity<EntityModel<LessonResourceDTO>> updateResource(
-            @PathVariable Long resourceId,
-            @RequestBody LessonResourceDTO dto) {
+   @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ADMIN' , 'STUDENT')")
+@PutMapping(value = "/{resourceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+public ResponseEntity<EntityModel<LessonResourceDTO>> updateResource(
+        @PathVariable Long resourceId,
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) String type,
+        @RequestParam(required = false) MultipartFile file) {
 
-        log.info("✏️ Updating resource with ID: {}", resourceId);
+    log.info("✏️ Updating resource with ID: {}", resourceId);
 
-        LessonResource resource = resourceRepository.findById(resourceId)
-                .orElseThrow(() -> {
-                    log.error("❌ Resource not found with ID: {}", resourceId);
-                    return new RuntimeException("Resource not found with ID: " + resourceId);
-                });
+    LessonResource resource = resourceRepository.findById(resourceId)
+            .orElseThrow(() -> {
+                log.error("❌ Resource not found with ID: {}", resourceId);
+                return new RuntimeException("Resource not found with ID: " + resourceId);
+            });
 
-        if (dto.getTitle() != null) resource.setTitle(dto.getTitle());
-        if (dto.getType() != null) {
-            try {
-                resource.setType(ResourceType.valueOf(dto.getType()));
-            } catch (IllegalArgumentException e) {
-                log.error("❌ Invalid resource type: {}", dto.getType());
-                return ResponseEntity.badRequest().body(null);
-            }
+    // تحديث البيانات الأساسية
+    if (title != null) resource.setTitle(title);
+    if (type != null) {
+        try {
+            resource.setType(ResourceType.valueOf(type));
+        } catch (IllegalArgumentException e) {
+            log.error("❌ Invalid resource type: {}", type);
+            return ResponseEntity.badRequest().body(null);
         }
-        if (dto.getUrl() != null) resource.setUrl(dto.getUrl());
-
-        resource = resourceRepository.save(resource);
-
-        log.info("✅ Resource updated with ID: {}", resource.getId());
-
-        EntityModel<LessonResourceDTO> model = EntityModel.of(mapToDTO(resource));
-        model.add(linkTo(methodOn(LessonResourceController.class).getResourcesByLessonId(resource.getLesson().getId())).withRel("lesson-resources"));
-
-        return ResponseEntity.ok(model);
     }
 
+    // تحديث الملف إذا تم تحميل ملف جديد
+    if (file != null && !file.isEmpty()) {
+        try {
+            // حذف الملف القديم إذا كان موجوداً
+            if (resource.getUrl() != null) {
+                fileStorageService.deleteFile(resource.getUrl());
+            }
+            
+            // حفظ الملف الجديد
+            String newUrl = fileStorageService.storeFile(file);
+            resource.setUrl(newUrl);
+        } catch (IOException e) {
+            log.error("❌ Error updating file: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    resource = resourceRepository.save(resource);
+
+    log.info("✅ Resource updated with ID: {}", resource.getId());
+
+    EntityModel<LessonResourceDTO> model = EntityModel.of(mapToDTO(resource));
+    model.add(linkTo(methodOn(LessonResourceController.class).getResourcesByLessonId(resource.getLesson().getId())).withRel("lesson-resources"));
+
+    return ResponseEntity.ok(model);
+}
   
       
 

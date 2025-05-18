@@ -119,19 +119,7 @@ public class AssignmentService {
         return convertToDTO(updatedAssignment);
     }
 
-    @Transactional
-    public void deleteAssignment(Long assignmentId) {
-        log.info("Deleting assignment with ID: {}", assignmentId);
-
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> {
-                    log.error("Assignment not found with id: {}", assignmentId);
-                    return new RuntimeException("Assignment not found with id: " + assignmentId);
-                });
-
-        assignmentRepository.delete(assignment);
-        log.info("Assignment deleted with ID: {}", assignmentId);
-    }
+   
 
     public AssignmentDTO getAssignmentById(Long assignmentId) {
         log.info("Fetching assignment with ID: {}", assignmentId);
@@ -439,4 +427,36 @@ public class AssignmentService {
             throw new RuntimeException("File not found " + fileName, ex);
         }
     }
+
+   
+@Transactional
+public void deleteAssignment(Long assignmentId) {
+    log.info("Deleting assignment with ID: {}", assignmentId);
+
+    Assignment assignment = assignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> {
+                log.error("Assignment not found with id: {}", assignmentId);
+                return new RuntimeException("Assignment not found with id: " + assignmentId);
+            });
+
+    // 1. حذف الـ submissions المرتبطة
+    List<AssignmentSubmission> submissions = submissionRepository.findByAssignmentId(assignmentId);
+    submissionRepository.deleteAll(submissions);
+
+    // 2. حذف الملف إذا وُجد
+    if (assignment.getFilePath() != null) {
+        try {
+            Files.deleteIfExists(Paths.get(assignment.getFilePath()));
+            log.info("Deleted file: {}", assignment.getFilePath());
+        } catch (IOException e) {
+            log.warn("Failed to delete file: {}", assignment.getFilePath(), e);
+        }
+    }
+
+    // 3. حذف الـ assignment نفسه
+    assignmentRepository.delete(assignment);
+    log.info("Assignment deleted with ID: {}", assignmentId);
+}
+
+
 }

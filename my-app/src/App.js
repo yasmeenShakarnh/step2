@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import Home from './pages/Home.js';
 import Login from './pages/Login.js';
