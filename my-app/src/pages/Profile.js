@@ -9,7 +9,8 @@ import {
   LockClosedIcon,
   PhotoIcon,
   TrashIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  SparklesIcon
 } from '@heroicons/react/24/solid';
 
 const Profile = () => {
@@ -212,32 +213,43 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-white to-[#C7E2FC] text-blue-800 relative overflow-hidden">
+      {/* Background Pattern */}
+      <motion.div 
+        className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNGM0LjQxOCAwIDgtMy41ODIgOC04cy0zLjU4Mi04LTgtOC04IDMuNTgyLTggOCAzLjU4MiA4IDggOHoiIHN0cm9rZT0iI0M3RTJGQyIgc3Ryb2tlLW9wYWNpdHk9Ii4wMyIvPjwvZz48L3N2Zz4=')] opacity-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.1 }}
+        transition={{ duration: 1.5 }}
+      />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-3xl mx-auto"
+        className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8"
       >
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-blue-100">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden border border-blue-100">
           {/* Header with gradient */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-400 p-8 text-center relative">
+          <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-8 text-center relative">
             {/* Watermark effect */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full bg-blue-300 blur-xl"></div>
-              <div className="absolute bottom-1/4 right-1/4 w-32 h-32 rounded-full bg-blue-200 blur-xl"></div>
+              <div className="absolute bottom-1/4 right-1/4 w-32 h-32 rounded-full bg-cyan-200 blur-xl"></div>
             </div>
             
             <div className="relative z-10">
-              <h1 className="text-3xl font-bold text-white mb-2">Profile Settings</h1>
-              <p className="text-blue-100">Manage your personal information</p>
+              <div className="flex items-center justify-center mb-4">
+                <SparklesIcon className="h-8 w-8 text-white animate-pulse" />
+                <h1 className="text-3xl font-bold text-white ml-3 font-['Poppins']">Profile Settings</h1>
+              </div>
+              <p className="text-blue-100 font-['Comic_Neue']">Manage your personal information</p>
               
               {/* Profile picture with floating effect */}
               <motion.div 
                 className="relative mt-6 mx-auto w-32 h-32"
                 whileHover={{ scale: 1.05 }}
               >
-                <div className="absolute inset-0 rounded-full shadow-lg border-4 border-white bg-blue-200 flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 rounded-full shadow-lg border-4 border-white bg-gradient-to-br from-blue-400 to-cyan-300 flex items-center justify-center overflow-hidden">
                   {previewUrl ? (
                     <img 
                       src={previewUrl} 
@@ -246,7 +258,7 @@ const Profile = () => {
                       onError={() => setPreviewUrl(null)}
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-blue-500 text-white text-3xl font-bold">
+                    <div className="h-full w-full flex items-center justify-center text-white text-3xl font-bold">
                       {`${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase()}
                     </div>
                   )}
@@ -293,7 +305,7 @@ const Profile = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white rounded-xl shadow-md transition-all"
               >
                 <PencilIcon className="h-5 w-5" />
                 Edit Profile
@@ -314,7 +326,7 @@ const Profile = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition-all disabled:opacity-70"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white rounded-xl shadow-md transition-all disabled:opacity-70"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
@@ -338,9 +350,11 @@ const Profile = () => {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`p-4 rounded-lg ${message.type === 'success' ? 
-                  'bg-green-50 text-green-700 border border-green-200' : 
-                  'bg-red-50 text-red-700 border border-red-200'}`}
+                className={`p-4 rounded-lg ${
+                  message.type === 'success' 
+                    ? 'bg-green-50 text-green-700 border border-green-200' 
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}
               >
                 <div className="flex items-start">
                   {message.type === 'success' ? (
@@ -352,13 +366,13 @@ const Profile = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   )}
-                  <span>{message.text}</span>
+                  <span className="font-['Comic_Neue']">{message.text}</span>
                 </div>
               </motion.div>
             )}
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="firstName">
+              <label className="block text-sm font-medium text-blue-800 font-['Poppins']" htmlFor="firstName">
                 First Name
               </label>
               {isEditing ? (
@@ -367,19 +381,19 @@ const Profile = () => {
                   type="text"
                   value={profile.firstName}
                   onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-['Comic_Neue']"
                   placeholder="First Name"
                   required
                 />
               ) : (
-                <div className="w-full px-4 py-3 rounded-lg bg-gray-50 text-gray-700 border border-transparent">
+                <div className="w-full px-4 py-3 rounded-lg bg-blue-50 text-blue-700 border border-transparent font-['Comic_Neue']">
                   {profile.firstName}
                 </div>
               )}
             </div>
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="lastName">
+              <label className="block text-sm font-medium text-blue-800 font-['Poppins']" htmlFor="lastName">
                 Last Name
               </label>
               {isEditing ? (
@@ -388,23 +402,23 @@ const Profile = () => {
                   type="text"
                   value={profile.lastName}
                   onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-['Comic_Neue']"
                   placeholder="Last Name"
                   required
                 />
               ) : (
-                <div className="w-full px-4 py-3 rounded-lg bg-gray-50 text-gray-700 border border-transparent">
+                <div className="w-full px-4 py-3 rounded-lg bg-blue-50 text-blue-700 border border-transparent font-['Comic_Neue']">
                   {profile.lastName}
                 </div>
               )}
             </div>
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="username">
+              <label className="block text-sm font-medium text-blue-800 font-['Poppins']" htmlFor="username">
                 Email Address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-400">
                   <UserIcon className="h-5 w-5" />
                 </div>
                 <input
@@ -412,25 +426,25 @@ const Profile = () => {
                   type="email"
                   value={profile.username}
                   disabled
-                  className="pl-10 w-full px-4 py-3 rounded-lg bg-gray-50 text-gray-700 border border-transparent"
+                  className="pl-10 w-full px-4 py-3 rounded-lg bg-blue-50 text-blue-700 border border-transparent font-['Comic_Neue']"
                   placeholder="Your email address"
                 />
               </div>
             </div>
 
             {isEditing && (
-              <div className="pt-6 border-t border-gray-200 space-y-4">
+              <div className="pt-6 border-t border-blue-100 space-y-4">
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Password Settings</h3>
-                  <p className="text-sm text-gray-500">Leave blank to keep your current password</p>
+                  <h3 className="text-lg font-medium text-blue-800 font-['Poppins']">Password Settings</h3>
+                  <p className="text-sm text-blue-600 font-['Comic_Neue']">Leave blank to keep your current password</p>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700" htmlFor="password">
+                  <label className="block text-sm font-medium text-blue-800 font-['Poppins']" htmlFor="password">
                     New Password
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-400">
                       <LockClosedIcon className="h-5 w-5" />
                     </div>
                     <input
@@ -438,13 +452,13 @@ const Profile = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      className="pl-10 w-full px-4 py-3 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-['Comic_Neue']"
                       placeholder="Enter new password"
                       minLength={8}
                     />
                   </div>
                   {password && (
-                    <p className={`text-xs mt-1 ${
+                    <p className={`text-xs mt-1 font-['Comic_Neue'] ${
                       password.length >= 8 ? 'text-green-600' : 'text-red-600'
                     }`}>
                       {password.length >= 8 ? '✓ Strong password' : 'Password must be at least 8 characters'}
