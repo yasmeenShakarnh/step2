@@ -20,6 +20,31 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import lms.step1.Repository.CourseRepository; // تأكد من وجود هذا الاستيراد
+
+
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import lms.step1.Enumeration.Role;  // Correct import
+
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+import java.util.logging.Logger;
+
+
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -27,7 +52,7 @@ import java.util.logging.Logger;
 @RequestMapping("/courses")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:8080")
 public class CourseController {
 
     private static final Logger logger = Logger.getLogger(CourseController.class.getName());
@@ -37,15 +62,11 @@ public class CourseController {
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
 
+     @PreAuthorize("hasAnyAuthority('ADMIN','INSTRUCTOR')")
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN','INSTRUCTOR')")
-    public ResponseEntity<CourseDTO> createCourse(@RequestBody CourseDTO courseDTO) {
-        try {
-            return ResponseEntity.ok(courseService.createCourse(courseDTO));
-        } catch (Exception e) {
-            logger.severe("Error creating course: " + e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
+    public ResponseEntity<EntityModel<CourseDTO>> createCourse(@Valid @RequestBody CourseDTO courseDTO) {
+        CourseDTO created = courseService.createCourse(courseDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(addLinks(created));
     }
 
     @PutMapping("/{id}")
@@ -189,4 +210,11 @@ public class CourseController {
             return ResponseEntity.internalServerError().build();
         }
     }
+      private EntityModel<CourseDTO> addLinks(CourseDTO courseDTO) {
+        return EntityModel.of(courseDTO,
+            linkTo(methodOn(CourseController.class).getCourseById(courseDTO.getId())).withSelfRel(),
+            linkTo(methodOn(CourseController.class).getAllCourses()).withRel("courses")
+        );
+    }
 }
+

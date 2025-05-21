@@ -29,47 +29,66 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
 
-    @Override
+     @Override
     public CourseDTO createCourse(CourseDTO courseDTO) {
-        log.info("📘 Creating new course with title: {}", courseDTO.getTitle());
+        try {
+            if (courseDTO == null) {
+                throw new IllegalArgumentException("Course data cannot be null");
+            }
 
-        if (courseRepository.existsByTitle(courseDTO.getTitle())) {
-            log.warn("⚠️ Course already exists: {}", courseDTO.getTitle());
-            throw new CourseAlreadyExistsException(courseDTO.getTitle());
+            if (courseRepository.existsByTitle(courseDTO.getTitle())) {
+                throw new CourseAlreadyExistsException(courseDTO.getTitle());
+            }
+
+            Course course = Course.builder()
+                    .title(courseDTO.getTitle())
+                    .description(courseDTO.getDescription())
+                    .duration(courseDTO.getDuration())
+                    .instructor(courseDTO.getInstructor())
+                    .build();
+
+            Course saved = courseRepository.save(course);
+            log.info("✅ Course created successfully with ID: {}", saved.getId());
+            return mapToDTO(saved);
+        } catch (Exception e) {
+            log.error("❌ Error creating course: {}", e.getMessage());
+            throw new RuntimeException("Failed to create course: " + e.getMessage());
         }
-
-        Course course = Course.builder()
-                .title(courseDTO.getTitle())
-                .description(courseDTO.getDescription())
-                .duration(courseDTO.getDuration())
-                .build();
-
-        Course saved = courseRepository.save(course);
-        log.info("✅ Course created with ID: {}", saved.getId());
-
-        return mapToDTO(saved);
     }
 
     @Override
     public CourseDTO updateCourse(Long courseId, CourseDTO courseDTO) {
-        log.info("✏️ Updating course with ID: {}", courseId);
+        try {
+            if (courseDTO == null) {
+                throw new IllegalArgumentException("Course data cannot be null");
+            }
 
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> {
-                    log.error("❌ Course not found with ID: {}", courseId);
-                    return new CourseNotFoundException("Course not found with ID: " + courseId);
-                });
+            log.info("✏️ Updating course with ID: {}", courseId);
 
-        course.setTitle(courseDTO.getTitle());
-        course.setDescription(courseDTO.getDescription());
-        course.setDuration(courseDTO.getDuration());
+            Course course = courseRepository.findById(courseId)
+                    .orElseThrow(() -> {
+                        log.error("❌ Course not found with ID: {}", courseId);
+                        return new CourseNotFoundException("Course not found with ID: " + courseId);
+                    });
 
-        Course updated = courseRepository.save(course);
-        log.info("✅ Course updated successfully with ID: {}", updated.getId());
+            // Keep existing instructor if not provided in update
+            User instructor = courseDTO.getInstructor() != null ? courseDTO.getInstructor() : course.getInstructor();
 
-        sendCourseUpdateNotification("boot83144@gmail.com", updated.getTitle(), updated.getDescription(), updated.getDuration());
+            course.setTitle(courseDTO.getTitle());
+            course.setDescription(courseDTO.getDescription());
+            course.setDuration(courseDTO.getDuration());
+            course.setInstructor(instructor);
 
-        return mapToDTO(updated);
+            Course updated = courseRepository.save(course);
+            log.info("✅ Course updated successfully with ID: {}", updated.getId());
+
+            sendCourseUpdateNotification("boot83144@gmail.com", updated.getTitle(), updated.getDescription(), updated.getDuration());
+
+            return mapToDTO(updated);
+        } catch (Exception e) {
+            log.error("❌ Error updating course: {}", e.getMessage());
+            throw new RuntimeException("Failed to update course: " + e.getMessage());
+        }
     }
 
     @Override
@@ -201,6 +220,7 @@ public class CourseServiceImpl implements CourseService {
                 .title(course.getTitle())
                 .description(course.getDescription())
                 .duration(course.getDuration())
+                .instructor(course.getInstructor())
                 .build();
     }
     
