@@ -1671,7 +1671,7 @@ const Dashboard = () => {
             <Typography 
               variant="caption" 
               sx={{ 
-                fontWeight: 500, 
+                fontWeight: 501, 
                 fontSize: { xs: '0.75rem', sm: '0.875rem' }
               }}
             >
