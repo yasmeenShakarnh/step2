@@ -1,3 +1,4 @@
+
 package lms.step1.Implementation;
 
 import lms.step1.Service.CourseService;
@@ -14,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import lms.step1.Repository.CourseRepository;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lms.step1.Model.Course;
@@ -31,47 +30,66 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
 
-    @Override
+     @Override
     public CourseDTO createCourse(CourseDTO courseDTO) {
-        log.info("📘 Creating new course with title: {}", courseDTO.getTitle());
+        try {
+            if (courseDTO == null) {
+                throw new IllegalArgumentException("Course data cannot be null");
+            }
 
-        if (courseRepository.existsByTitle(courseDTO.getTitle())) {
-            log.warn("⚠️ Course already exists: {}", courseDTO.getTitle());
-            throw new CourseAlreadyExistsException(courseDTO.getTitle());
+            if (courseRepository.existsByTitle(courseDTO.getTitle())) {
+                throw new CourseAlreadyExistsException(courseDTO.getTitle());
+            }
+
+            Course course = Course.builder()
+                    .title(courseDTO.getTitle())
+                    .description(courseDTO.getDescription())
+                    .duration(courseDTO.getDuration())
+                    .instructor(courseDTO.getInstructor())
+                    .build();
+
+            Course saved = courseRepository.save(course);
+            log.info("✅ Course created successfully with ID: {}", saved.getId());
+            return mapToDTO(saved);
+        } catch (Exception e) {
+            log.error("❌ Error creating course: {}", e.getMessage());
+            throw new RuntimeException("Failed to create course: " + e.getMessage());
         }
-
-        Course course = Course.builder()
-                .title(courseDTO.getTitle())
-                .description(courseDTO.getDescription())
-                .duration(courseDTO.getDuration())
-                .build();
-
-        Course saved = courseRepository.save(course);
-        log.info("✅ Course created with ID: {}", saved.getId());
-
-        return mapToDTO(saved);
     }
 
     @Override
     public CourseDTO updateCourse(Long courseId, CourseDTO courseDTO) {
-        log.info("✏️ Updating course with ID: {}", courseId);
+        try {
+            if (courseDTO == null) {
+                throw new IllegalArgumentException("Course data cannot be null");
+            }
 
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> {
-                    log.error("❌ Course not found with ID: {}", courseId);
-                    return new CourseNotFoundException("Course not found with ID: " + courseId);
-                });
+            log.info("✏️ Updating course with ID: {}", courseId);
 
-        course.setTitle(courseDTO.getTitle());
-        course.setDescription(courseDTO.getDescription());
-        course.setDuration(courseDTO.getDuration());
+            Course course = courseRepository.findById(courseId)
+                    .orElseThrow(() -> {
+                        log.error("❌ Course not found with ID: {}", courseId);
+                        return new CourseNotFoundException("Course not found with ID: " + courseId);
+                    });
 
-        Course updated = courseRepository.save(course);
-        log.info("✅ Course updated successfully with ID: {}", updated.getId());
+            // Keep existing instructor if not provided in update
+            User instructor = courseDTO.getInstructor() != null ? courseDTO.getInstructor() : course.getInstructor();
 
-        sendCourseUpdateNotification("boot83144@gmail.com", updated.getTitle(), updated.getDescription(), updated.getDuration());
+            course.setTitle(courseDTO.getTitle());
+            course.setDescription(courseDTO.getDescription());
+            course.setDuration(courseDTO.getDuration());
+            course.setInstructor(instructor);
 
-        return mapToDTO(updated);
+            Course updated = courseRepository.save(course);
+            log.info("✅ Course updated successfully with ID: {}", updated.getId());
+
+            sendCourseUpdateNotification("boot83144@gmail.com", updated.getTitle(), updated.getDescription(), updated.getDuration());
+
+            return mapToDTO(updated);
+        } catch (Exception e) {
+            log.error("❌ Error updating course: {}", e.getMessage());
+            throw new RuntimeException("Failed to update course: " + e.getMessage());
+        }
     }
 
     @Override
@@ -151,8 +169,8 @@ public class CourseServiceImpl implements CourseService {
         log.info("Fetching recent courses for student: {}", username);
         List<Course> courses = courseRepository.findRecentCoursesByStudent(username);
         return courses.stream()
-            .map(this::mapToDTO)
-            .collect(Collectors.toList());
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -160,8 +178,8 @@ public class CourseServiceImpl implements CourseService {
         log.info("Fetching recent courses for instructor: {}", username);
         List<Course> courses = courseRepository.findRecentCoursesByInstructor(username);
         return courses.stream()
-            .map(this::mapToDTO)
-            .collect(Collectors.toList());
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -169,8 +187,8 @@ public class CourseServiceImpl implements CourseService {
         log.info("Fetching recent courses for admin");
         List<Course> courses = courseRepository.findTop5ByOrderByCreatedAtDesc();
         return courses.stream()
-            .map(this::mapToDTO)
-            .collect(Collectors.toList());
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -180,7 +198,7 @@ public class CourseServiceImpl implements CourseService {
                     .orElseThrow(() -> new RuntimeException("Instructor not found"));
 
             List<Course> instructorCourses = courseRepository.findByInstructor(instructor);
-            
+
             return instructorCourses.stream()
                     .flatMap(course -> course.getEnrollments().stream()
                             .map(enrollment -> new StudentCourseDTO(
@@ -188,8 +206,7 @@ public class CourseServiceImpl implements CourseService {
                                     enrollment.getStudent().getFirstName(),
                                     enrollment.getStudent().getLastName(),
                                     course.getTitle(),
-                                    course.getId()
-                            )))
+                                    course.getId())))
                     .collect(Collectors.toList());
         } catch (Exception e) {
             e.printStackTrace();
@@ -203,31 +220,10 @@ public class CourseServiceImpl implements CourseService {
                 .title(course.getTitle())
                 .description(course.getDescription())
                 .duration(course.getDuration())
+                .instructor(course.getInstructor())
                 .build();
     }
     
-public List<CourseDTO> getCoursesByInstructor(Long instructorId) {
-    User instructor = userRepository.findById(instructorId)
-            .orElseThrow(() -> new RuntimeException("Instructor not found"));
-
-    List<Course> courses = courseRepository.findByInstructor(instructor);
-
-    List<CourseDTO> courseDTOs = new ArrayList<>();
-
-    for (Course course : courses) {
-        CourseDTO dto = new CourseDTO();
-        dto.setId(course.getId());
-        dto.setTitle(course.getTitle());
-        dto.setDescription(course.getDescription());
-        dto.setDuration(course.getDuration());
-        dto.setInstructor(course.getInstructor()); // هذا هو الحقل الأخير في DTO
-
-        courseDTOs.add(dto);
-    }
-
-    return courseDTOs;
-}
-
 
     
 }

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public interface CourseService {
-    CourseDTO createCourse(CourseDTO courseDTO);
+     CourseDTO createCourse(CourseDTO courseDTO);
     CourseDTO updateCourse(Long id, CourseDTO courseDTO);
     void deleteCourse(Long id);
     CourseDTO getCourseById(Long id);
@@ -18,6 +18,5 @@ public interface CourseService {
     List<CourseDTO> getRecentCourses();
     void sendCourseUpdateNotification(String email, String courseTitle, String description, int duration);
     List<StudentCourseDTO> getInstructorStudents(String instructorUsername);
-        List<CourseDTO> getCoursesByInstructor(Long instructorId);
 
 }
