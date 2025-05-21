@@ -953,8 +953,8 @@ const Dashboard = () => {
                   <SchoolIcon sx={{ color: colors.primary }} />
                 </Box>
                 <Typography variant="h6" sx={{ color: colors.textDark, fontWeight: 600 }}>
-                Courses Taught
-              </Typography>
+                  Courses Taught
+                </Typography>
               </Box>
               <Typography variant="h4" sx={{ 
                 color: colors.primary,
@@ -990,8 +990,8 @@ const Dashboard = () => {
                   <PeopleIcon sx={{ color: colors.secondary }} />
                 </Box>
                 <Typography variant="h6" sx={{ color: colors.textDark, fontWeight: 600 }}>
-                Registered Students
-              </Typography>
+                  Total Students
+                </Typography>
               </Box>
               <Typography variant="h4" sx={{ 
                 color: colors.secondary,
@@ -1027,8 +1027,8 @@ const Dashboard = () => {
                 boxShadow: 'none',
                 border: `1px solid ${colors.border}`
               }}>
-  <Table>
-    <TableHead>
+                <Table>
+                  <TableHead>
                     <TableRow sx={{ 
                       bgcolor: colors.background,
                       '& th': {
@@ -1041,66 +1041,70 @@ const Dashboard = () => {
                         letterSpacing: '0.5px'
                       }
                     }}>
-        <TableCell>Course Name</TableCell>
-        <TableCell>Instructor</TableCell>
-      </TableRow>
-    </TableHead>
-    <TableBody>
-      {courses.map((course) => (
-                      <TableRow 
-                        key={course.id}
-                        hover
-                        sx={{ 
-                          '&:nth-of-type(odd)': { 
-                            bgcolor: 'rgba(0, 0, 0, 0.02)' 
-                          },
-                          '&:last-child td': { 
-                            borderBottom: 0 
-                          },
-                          '& td': {
-                            py: 2,
-                            borderBottom: `1px solid ${colors.border}`,
-                            color: colors.textDark,
-                            fontSize: '0.95rem'
-                          },
-                          transition: 'background-color 0.2s ease-in-out'
-                        }}
-                      >
-                        <TableCell sx={{ fontWeight: 500 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Box sx={{ 
-                              p: 1, 
-                              borderRadius: '8px', 
-                              bgcolor: 'rgba(37, 99, 235, 0.1)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <ClassIcon sx={{ color: colors.primary }} />
+                      <TableCell>Course Name</TableCell>
+                      <TableCell>Number of Students</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {courses.map((course) => {
+                      // Count students for this course
+                      const courseStudents = students.filter(student => student.courseId === course.id);
+                      return (
+                        <TableRow 
+                          key={course.id}
+                          hover
+                          sx={{ 
+                            '&:nth-of-type(odd)': { 
+                              bgcolor: 'rgba(0, 0, 0, 0.02)' 
+                            },
+                            '&:last-child td': { 
+                              borderBottom: 0 
+                            },
+                            '& td': {
+                              py: 2,
+                              borderBottom: `1px solid ${colors.border}`,
+                              color: colors.textDark,
+                              fontSize: '0.95rem'
+                            },
+                            transition: 'background-color 0.2s ease-in-out'
+                          }}
+                        >
+                          <TableCell sx={{ fontWeight: 500 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{ 
+                                p: 1, 
+                                borderRadius: '8px', 
+                                bgcolor: 'rgba(37, 99, 235, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                <ClassIcon sx={{ color: colors.primary }} />
+                              </Box>
+                              <Typography>{course.title || course.name}</Typography>
                             </Box>
-                            {course.name}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Box sx={{ 
-                              p: 1, 
-                              borderRadius: '8px', 
-                              bgcolor: 'rgba(124, 58, 237, 0.1)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <AccountCircleIcon sx={{ color: colors.secondary }} />
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{ 
+                                p: 1, 
+                                borderRadius: '8px', 
+                                bgcolor: 'rgba(124, 58, 237, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                <PeopleIcon sx={{ color: colors.secondary }} />
+                              </Box>
+                              {courseStudents.length}
                             </Box>
-                            {`${course.instructorFirstName} ${course.instructorLastName}`}
-                          </Box>
-                        </TableCell>
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
-</TableContainer>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </CardContent>
           </Card>
         </Grid>
