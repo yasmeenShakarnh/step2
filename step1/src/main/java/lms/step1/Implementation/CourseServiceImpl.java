@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import lms.step1.Repository.CourseRepository;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lms.step1.Model.Course;
@@ -204,6 +206,28 @@ public class CourseServiceImpl implements CourseService {
                 .build();
     }
     
+public List<CourseDTO> getCoursesByInstructor(Long instructorId) {
+    User instructor = userRepository.findById(instructorId)
+            .orElseThrow(() -> new RuntimeException("Instructor not found"));
+
+    List<Course> courses = courseRepository.findByInstructor(instructor);
+
+    List<CourseDTO> courseDTOs = new ArrayList<>();
+
+    for (Course course : courses) {
+        CourseDTO dto = new CourseDTO();
+        dto.setId(course.getId());
+        dto.setTitle(course.getTitle());
+        dto.setDescription(course.getDescription());
+        dto.setDuration(course.getDuration());
+        dto.setInstructor(course.getInstructor()); // هذا هو الحقل الأخير في DTO
+
+        courseDTOs.add(dto);
+    }
+
+    return courseDTOs;
+}
+
 
     
 }

@@ -1,3 +1,4 @@
+
 {
   "editLesson": {
     "title": "Edit Lesson",
@@ -433,5 +434,35 @@
   },
   "messages": {
     "updateSuccess": "Profile updated successfully!"
-  }
-}
+  },
+
+  "assignInstructor": {
+    "title": "Assign Instructor",
+    "description": "Assign an instructor to course:",
+    "selectLabel": "Select Instructor",
+    "selectPlaceholder": "Choose an instructor"
+  },
+  "buttons": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "assign": "Assign"
+  },
+
+  "courseForm": {
+    "createTitle": "Create New Course",
+    "updateTitle": "Update Course",
+    "fields": {
+      "title": "Title",
+      "description": "Description",
+      "category": "Category",
+      "duration": "Duration (hours)"
+    },
+    "validation": {
+      "requiredFields": "Title and description are required"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "create": "Create Course",
+      "update": "Update Course"
+    }
+  }}

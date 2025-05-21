@@ -459,5 +459,55 @@
   },
   "errors": {
     "noToken": "لم يتم العثور على رمز المصادقة"
+  },
+
+  "courseForm": {
+    "createTitle": "إنشاء دورة جديدة",
+    "updateTitle": "تحديث الدورة",
+    "fields": {
+      "title": "العنوان",
+      "description": "الوصف",
+      "category": "الفئة",
+      "duration": "المدة (ساعات)"
+    },
+    "validation": {
+      "requiredFields": "العنوان والوصف مطلوبان"
+    },
+    "buttons": {
+      "cancel": "إلغاء",
+      "create": "إنشاء الدورة",
+      "update": "تحديث الدورة"
+    },
+  
+
+  "assignInstructor": {
+    "title": "تعيين مدرس",
+    "description": "تعيين مدرس للدورة:",
+    "selectLabel": "اختر المدرس",
+    "selectPlaceholder": "اختر مدرسًا"
+  },
+  "buttons": {
+    "close": "إغلاق",
+    "cancel": "إلغاء",
+    "assign": "تعيين"
+  },
+
+  "courseForm": {
+    "createTitle": "إنشاء دورة جديدة",
+    "updateTitle": "تحديث الدورة",
+    "fields": {
+      "title": "العنوان",
+      "description": "الوصف",
+      "category": "الفئة",
+      "duration": "المدة (ساعات)"
+    },
+    "validation": {
+      "requiredFields": "العنوان والوصف مطلوبان"
+    },
+    "buttons": {
+      "cancel": "إلغاء",
+      "create": "إنشاء الدورة",
+      "update": "تحديث الدورة"
+    }
   }
-}
+  }}

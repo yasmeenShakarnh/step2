@@ -5,7 +5,7 @@ import { LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
 import { FcGoogle } from 'react-icons/fc/index.js';
 import axios from 'axios';
 
-const Login = () => {
+const Register = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: '',
@@ -408,4 +408,4 @@ const Login = () => {
 };
 
 
-export default Login;
+export default Register;

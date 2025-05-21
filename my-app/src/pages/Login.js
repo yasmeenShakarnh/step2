@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
-import { FcGoogle } from 'react-icons/fc/index.js';
+import { LockClosedIcon, UserIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
+import { SparklesIcon } from 'lucide-react';
 
-// نظام الألوان المنسق مع Dashboard
 const colors = {
   primary: '#3498db',
   secondary: '#e67e22',
@@ -17,6 +17,7 @@ const colors = {
 };
 
 const Login = () => {
+  const { t, i18n } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: '',
@@ -27,7 +28,6 @@ const Login = () => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -57,22 +57,22 @@ const Login = () => {
 
   const validate = () => {
     const newErrors = {};
-    
+
     if (!isLogin) {
-      if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-      if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+      if (!formData.firstName.trim()) newErrors.firstName = t('errors.requiredField');
+      if (!formData.lastName.trim()) newErrors.lastName = t('errors.requiredField');
     }
 
     if (!formData.username.trim()) {
-      newErrors.username = 'Email is required';
+      newErrors.username = t('errors.requiredField');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username)) {
-      newErrors.username = 'Invalid email address';
+      newErrors.username = t('errors.invalidEmail');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('errors.requiredField');
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = t('errors.shortPassword');
     }
 
     setErrors(newErrors);
@@ -108,31 +108,48 @@ const Login = () => {
 
         setIsLogin(true);
         setFormData(prev => ({ ...prev, password: '', firstName: '', lastName: '' }));
-        setErrors({ api: 'Registered successfully! Please log in.' });
+        setErrors({ api: t('messages.registerSuccess') });
       }
     } catch (error) {
       setErrors({
-        api: error.response?.data?.message || 'Authentication failed. Please try again.'
+        api: error.response?.data?.message || t('errors.authFailed')
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const initiateGoogleLogin = async () => {
-    try {
-      setIsGoogleLoading(true);
-      const response = await axios.get('http://localhost:8080/auth/google-link');
-      window.location.href = response.data._links['google-login'].href;
-    } catch (error) {
-      setErrors({ api: 'Failed to initiate Google login. Please try again.' });
-    } finally {
-      setIsGoogleLoading(false);
-    }
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C7E2FC] to-[#f8f9fa] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#C7E2FC] to-[#f8f9fa] flex items-center justify-center p-4" dir={i18n.dir()}>
+      {/* أزرار اللغة بالتنسيق الجديد */}
+      <div className="fixed top-4 left-4 z-50">
+        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg border border-gray-200">
+          <GlobeAltIcon className="h-5 w-5 text-gray-600" />
+          <button
+            onClick={() => changeLanguage('en')}
+            className={`px-2 py-1 rounded-md text-sm ${
+              i18n.language === 'en' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            EN
+          </button>
+          <button
+            onClick={() => changeLanguage('ar')}
+            className={`px-2 py-1 rounded-md text-sm ${
+              i18n.language === 'ar' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            AR
+          </button>
+        </div>
+      </div>
+
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -145,10 +162,10 @@ const Login = () => {
             style={{ background: colors.gradient }}
           >
             <h2 className="text-3xl font-bold text-white font-['Poppins']">
-              {isLogin ? 'Welcome Back!' : 'Join Us Today!'}
+              {isLogin ? t('login.welcomeBack') : t('login.joinUs')}
             </h2>
             <p className="text-blue-100 mt-2 font-['Comic_Neue']">
-              {isLogin ? 'Login to continue your learning journey' : 'Create an account to get started'}
+              {isLogin ? t('login.loginMessage') : t('login.registerMessage')}
             </p>
           </div>
 
@@ -169,13 +186,14 @@ const Login = () => {
 
             {!isLogin && (
               <>
+                {/* First Name */}
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="mb-4"
                 >
                   <label className="block text-[#2c3e50] text-sm font-medium mb-2 font-['Poppins']">
-                    First Name
+                    {t('login.firstName')}
                   </label>
                   <input
                     name="firstName"
@@ -184,18 +202,19 @@ const Login = () => {
                     className={`w-full p-3 rounded-lg border ${
                       errors.firstName ? 'border-red-500' : 'border-[#e0e0e0]'
                     } focus:outline-none focus:ring-2 focus:ring-[#3498db]`}
-                    placeholder="John"
+                    placeholder={t('login.firstName')}
                   />
                   {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
                 </motion.div>
 
+                {/* Last Name */}
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="mb-4"
                 >
                   <label className="block text-[#2c3e50] text-sm font-medium mb-2 font-['Poppins']">
-                    Last Name
+                    {t('login.lastName')}
                   </label>
                   <input
                     name="lastName"
@@ -204,14 +223,15 @@ const Login = () => {
                     className={`w-full p-3 rounded-lg border ${
                       errors.lastName ? 'border-red-500' : 'border-[#e0e0e0]'
                     } focus:outline-none focus:ring-2 focus:ring-[#3498db]`}
-                    placeholder="Doe"
+                    placeholder={t('login.lastName')}
                   />
                   {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
                 </motion.div>
 
+                {/* Role */}
                 <div className="mb-4">
                   <label className="block text-[#2c3e50] text-sm font-medium mb-2 font-['Poppins']">
-                    I am a:
+                    {t('login.iAm')}
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     {['STUDENT', 'INSTRUCTOR'].map((role) => (
@@ -224,7 +244,9 @@ const Login = () => {
                         }`}
                         onClick={() => setFormData(prev => ({ ...prev, role }))}
                       >
-                        <span className="text-[#2c3e50] text-sm font-medium">{role.toLowerCase()}</span>
+                        <span className="text-[#2c3e50] text-sm font-medium">
+                          {role === 'STUDENT' ? t('login.student') : t('login.instructor')}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -232,8 +254,11 @@ const Login = () => {
               </>
             )}
 
+            {/* Username */}
             <div className="mb-4">
-              <label className="block text-[#2c3e50] text-sm font-medium mb-2 font-['Poppins']">Email</label>
+              <label className="block text-[#2c3e50] text-sm font-medium mb-2 font-['Poppins']">
+                {t('login.email')}
+              </label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#7f8c8d]" />
                 <input
@@ -249,8 +274,11 @@ const Login = () => {
               {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
             </div>
 
+            {/* Password */}
             <div className="mb-6">
-              <label className="block text-[#2c3e50] text-sm font-medium mb-2 font-['Poppins']">Password</label>
+              <label className="block text-[#2c3e50] text-sm font-medium mb-2 font-['Poppins']">
+                {t('login.password')}
+              </label>
               <div className="relative">
                 <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#7f8c8d]" />
                 <input
@@ -267,6 +295,7 @@ const Login = () => {
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
+            {/* Submit Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -275,42 +304,23 @@ const Login = () => {
               className="w-full bg-[#3498db] hover:bg-[#2980b9] text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg flex justify-center items-center font-['Poppins']"
             >
               {isLoading ? (
-                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"/>
-              ) : isLogin ? 'Login' : 'Sign Up'}
+                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+              ) : isLogin ? t('login.login') : t('login.signUp')}
             </motion.button>
 
-            <div className="my-6 relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#e0e0e0]"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="px-2 bg-white text-[#7f8c8d] text-sm">Or continue with</span>
-              </div>
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={initiateGoogleLogin}
-              disabled={isGoogleLoading}
-              className="w-full bg-white border border-[#e0e0e0] rounded-lg py-2 flex items-center justify-center text-[#2c3e50] hover:bg-gray-50 transition-colors font-['Poppins']"
-            >
-              <FcGoogle className="h-5 w-5 mr-2" />
-              {isGoogleLoading ? 'Processing...' : 'Google Sign In'}
-            </motion.button>
-
+            {/* Toggle Mode */}
             <div className="mt-6 text-center">
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-[#3498db] hover:text-[#2980b9] text-sm font-medium font-['Poppins']"
               >
-                {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login"}
+                {isLogin ? t('login.noAccount') : t('login.haveAccount')}
               </button>
             </div>
           </form>
 
+          {/* Back to Home */}
           <div className="mt-4 pb-6 text-center">
             <Link 
               to="/" 
@@ -324,7 +334,7 @@ const Login = () => {
               >
                 <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 10H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
               </svg>
-              Back to Home
+              {t('login.backToHome')}
             </Link>
           </div>
         </div>

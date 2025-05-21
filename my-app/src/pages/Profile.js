@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   PencilIcon,
   XMarkIcon,
@@ -9,10 +10,12 @@ import {
   LockClosedIcon,
   PhotoIcon,
   TrashIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/solid';
 
 const Profile = () => {
+  const { t, i18n } = useTranslation();
   const [profile, setProfile] = useState({
     firstName: '',
     lastName: '',
@@ -30,6 +33,12 @@ const Profile = () => {
 
   const token = localStorage.getItem('accessToken');
 
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -40,36 +49,34 @@ const Profile = () => {
           }
         });
         const data = response.data;
-        
-        // Get profile picture URL from links
         const profilePictureLink = data._links?.['profile-picture']?.href;
-        
+
         const profileData = {
           firstName: data.firstName,
           lastName: data.lastName,
           username: data.username,
           profilePicture: profilePictureLink
         };
-        
+
         setProfile(profileData);
         setOriginalProfile(profileData);
         setPreviewUrl(profilePictureLink);
         setError(null);
       } catch (error) {
         console.error('Error fetching profile:', error);
-        setError('Failed to load profile data');
-        setMessage({ text: 'Failed to load profile data', type: 'error' });
+        setError(t('errors.loadProfileFailed'));
+        setMessage({ text: t('errors.loadProfileFailed'), type: 'error' });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProfile();
-  }, [token]);
+  }, [token, t]);
 
   const validatePassword = (password) => {
     if (password && password.length < 8) {
-      return 'Password must be at least 8 characters long';
+      return t('errors.passwordLength');
     }
     return null;
   };
@@ -77,7 +84,7 @@ const Profile = () => {
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return 'Please enter a valid email address';
+      return t('errors.invalidEmail');
     }
     return null;
   };
@@ -86,11 +93,11 @@ const Profile = () => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        setMessage({ text: 'Please select an image file', type: 'error' });
+        setMessage({ text: t('errors.invalidImageType'), type: 'error' });
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        setMessage({ text: 'File size should be less than 5MB', type: 'error' });
+        setMessage({ text: t('errors.fileSizeLimit'), type: 'error' });
         return;
       }
       setSelectedFile(file);
@@ -111,7 +118,7 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const passwordError = validatePassword(password);
     if (passwordError) {
       setMessage({ text: passwordError, type: 'error' });
@@ -136,40 +143,38 @@ const Profile = () => {
         formData.append('profilePicture', new File([], 'remove-profile-picture', { type: 'application/octet-stream' }));
       }
 
-      const response = await axios.put('/user/update-profile', formData, {
+      const response = await axios.put('http://localhost:8080/user/update-profile', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
-      
-      // Store new token if it's returned in the response
+
       const tokenLink = response.data._links?.token;
       if (tokenLink && tokenLink.href) {
         localStorage.setItem('accessToken', tokenLink.href);
       }
 
-      // Update profile picture URL from response
       const profilePictureLink = response.data._links?.['profile-picture']?.href;
-      
+
       const updatedProfile = {
         ...profile,
         profilePicture: profilePictureLink
       };
-      
+
       setProfile(updatedProfile);
       setOriginalProfile(updatedProfile);
       setPreviewUrl(profilePictureLink);
-      
-      setMessage({ text: response.data.content || 'Profile updated successfully', type: 'success' });
+
+      setMessage({ text: response.data.content || t('messages.updateSuccess'), type: 'success' });
       setIsEditing(false);
       setPassword('');
       setSelectedFile(null);
     } catch (error) {
       console.error('Update failed:', error);
-      setMessage({ 
-        text: error.response?.data?.content || 'Failed to update profile', 
-        type: 'error' 
+      setMessage({
+        text: error.response?.data?.content || t('errors.updateFailed'),
+        type: 'error'
       });
     } finally {
       setIsLoading(false);
@@ -190,21 +195,21 @@ const Profile = () => {
 
   if (error && !profile.username) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100" dir={i18n.dir()}>
         <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md">
           <div className="text-red-500 mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">{t('errors.errorTitle')}</h3>
           <p className="text-gray-600 mb-6">{error}</p>
           <button 
             onClick={() => window.location.reload()}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2 mx-auto"
           >
             <ArrowPathIcon className="h-5 w-5" />
-            Try Again
+            {t('buttons.tryAgain')}
           </button>
         </div>
       </div>
@@ -212,7 +217,30 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8" dir={i18n.dir()}>
+      {/* زر تغيير اللغة */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg border border-gray-200">
+          <GlobeAltIcon className="h-5 w-5 text-gray-600" />
+          <button
+            onClick={() => changeLanguage('en')}
+            className={`px-2 py-1 rounded-md text-sm ${
+              i18n.language === 'en' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            EN
+          </button>
+          <button
+            onClick={() => changeLanguage('ar')}
+            className={`px-2 py-1 rounded-md text-sm ${
+              i18n.language === 'ar' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            AR
+          </button>
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -229,8 +257,8 @@ const Profile = () => {
             </div>
             
             <div className="relative z-10">
-              <h1 className="text-3xl font-bold text-white mb-2">Profile Settings</h1>
-              <p className="text-blue-100">Manage your personal information</p>
+              <h1 className="text-3xl font-bold text-white mb-2">{t('profile.title')}</h1>
+              <p className="text-blue-100">{t('profile.subtitle')}</p>
               
               {/* Profile picture with floating effect */}
               <motion.div 
@@ -241,13 +269,13 @@ const Profile = () => {
                   {previewUrl ? (
                     <img 
                       src={previewUrl} 
-                      alt="Profile" 
+                      alt={t('profile.profileImageAlt')} 
                       className="w-full h-full object-cover"
                       onError={() => setPreviewUrl(null)}
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center bg-blue-500 text-white text-3xl font-bold">
-                      {`${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase()}
+                      {`${(profile.firstName?.charAt(0) || '')}${(profile.lastName?.charAt(0) || '')}`.toUpperCase()}
                     </div>
                   )}
                 </div>
@@ -296,7 +324,7 @@ const Profile = () => {
                 className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition-all"
               >
                 <PencilIcon className="h-5 w-5" />
-                Edit Profile
+                {t('profile.editProfile')}
               </motion.button>
             ) : (
               <div className="flex gap-3">
@@ -307,7 +335,7 @@ const Profile = () => {
                   className="flex items-center gap-2 px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl shadow-md transition-all"
                 >
                   <XMarkIcon className="h-5 w-5" />
-                  Cancel
+                  {t('buttons.cancel')}
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -319,12 +347,12 @@ const Profile = () => {
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Saving...
+                      {t('buttons.saving')}...
                     </div>
                   ) : (
                     <>
                       <CheckIcon className="h-5 w-5" />
-                      Save Changes
+                      {t('profile.saveChanges')}
                     </>
                   )}
                 </motion.button>
@@ -359,7 +387,7 @@ const Profile = () => {
 
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700" htmlFor="firstName">
-                First Name
+                {t('form.firstName')}
               </label>
               {isEditing ? (
                 <input
@@ -368,7 +396,7 @@ const Profile = () => {
                   value={profile.firstName}
                   onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="First Name"
+                  placeholder={t('form.firstNamePlaceholder')}
                   required
                 />
               ) : (
@@ -380,7 +408,7 @@ const Profile = () => {
 
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700" htmlFor="lastName">
-                Last Name
+                {t('form.lastName')}
               </label>
               {isEditing ? (
                 <input
@@ -389,7 +417,7 @@ const Profile = () => {
                   value={profile.lastName}
                   onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Last Name"
+                  placeholder={t('form.lastNamePlaceholder')}
                   required
                 />
               ) : (
@@ -401,7 +429,7 @@ const Profile = () => {
 
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700" htmlFor="username">
-                Email Address
+                {t('form.email')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -413,7 +441,7 @@ const Profile = () => {
                   value={profile.username}
                   disabled
                   className="pl-10 w-full px-4 py-3 rounded-lg bg-gray-50 text-gray-700 border border-transparent"
-                  placeholder="Your email address"
+                  placeholder={t('form.emailPlaceholder')}
                 />
               </div>
             </div>
@@ -421,13 +449,13 @@ const Profile = () => {
             {isEditing && (
               <div className="pt-6 border-t border-gray-200 space-y-4">
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Password Settings</h3>
-                  <p className="text-sm text-gray-500">Leave blank to keep your current password</p>
+                  <h3 className="text-lg font-medium text-gray-900">{t('profile.passwordSettings')}</h3>
+                  <p className="text-sm text-gray-500">{t('profile.passwordHint')}</p>
                 </div>
 
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700" htmlFor="password">
-                    New Password
+                    {t('form.newPassword')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -439,7 +467,7 @@ const Profile = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Enter new password"
+                      placeholder={t('form.newPasswordPlaceholder')}
                       minLength={8}
                     />
                   </div>
@@ -447,7 +475,7 @@ const Profile = () => {
                     <p className={`text-xs mt-1 ${
                       password.length >= 8 ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {password.length >= 8 ? '✓ Strong password' : 'Password must be at least 8 characters'}
+                      {password.length >= 8 ? t('profile.strongPassword') : t('errors.passwordLength')}
                     </p>
                   )}
                 </div>

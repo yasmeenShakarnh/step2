@@ -5,17 +5,20 @@ import {
   ArrowLeftIcon,
   DocumentTextIcon,
   CalendarIcon,
-  ClockIcon,
   PaperClipIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
-  CloudArrowUpIcon
+  CloudArrowUpIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const CreateAssignment = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -26,6 +29,12 @@ const CreateAssignment = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -47,32 +56,31 @@ const CreateAssignment = () => {
     setLoading(true);
     setError('');
     setSuccess('');
-  
+
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
         throw new Error('No authentication token found');
       }
-  
+
       const dueDate = new Date(formData.dueDate);
       const formattedDueDate = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')} ${String(dueDate.getHours()).padStart(2, '0')}:${String(dueDate.getMinutes()).padStart(2, '0')}:${String(dueDate.getSeconds()).padStart(2, '0')}`;
-  
+
       const formDataToSend = new FormData();
-      
       formDataToSend.append('assignmentDTO', JSON.stringify({
         title: formData.title,
         description: formData.description,
         dueDate: formattedDueDate,
         maxScore: formData.totalMarks
       }));
-      
+
       if (formData.file) {
         formDataToSend.append('file', formData.file);
       }
-      
+
       formDataToSend.append('courseId', courseId);
-  
-      const response = await axios.post(
+
+      await axios.post(
         'http://localhost:8080/assignments/create',
         formDataToSend,
         {
@@ -82,21 +90,39 @@ const CreateAssignment = () => {
           }
         }
       );
-  
-      setSuccess('Assignment created successfully!');
+
+      setSuccess(t('assignment.success'));
       setTimeout(() => {
         navigate(`/courses/${courseId}`);
       }, 1500);
     } catch (err) {
-      console.error('Error details:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'Failed to create assignment. Please try again.');
+      setError(err.response?.data?.message || t('assignment.error'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8" dir={i18n.dir()}>
+      {/* Language Switcher */}
+      <div className="fixed top-4 left-4 z-50">
+        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg border border-gray-200">
+          <GlobeAltIcon className="h-5 w-5 text-gray-600" />
+          <button
+            onClick={() => changeLanguage('en')}
+            className={`px-2 py-1 rounded-md text-sm ${i18n.language === 'en' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            EN
+          </button>
+          <button
+            onClick={() => changeLanguage('ar')}
+            className={`px-2 py-1 rounded-md text-sm ${i18n.language === 'ar' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            AR
+          </button>
+        </div>
+      </div>
+
       <div className="max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -113,11 +139,11 @@ const CreateAssignment = () => {
                 className="flex items-center text-white hover:text-blue-200 transition-colors"
               >
                 <ArrowLeftIcon className="h-5 w-5 mr-2" />
-                Back to Course
+                {t('assignment.back')}
               </motion.button>
               <h2 className="text-2xl font-bold flex items-center">
                 <DocumentTextIcon className="h-6 w-6 mr-2" />
-                Create New Assignment
+                {t('assignment.title')}
               </h2>
             </div>
           </div>
@@ -151,13 +177,9 @@ const CreateAssignment = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
+                <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                    Assignment Title *
+                    {t('assignment.fields.title')} *
                   </label>
                   <input
                     type="text"
@@ -166,17 +188,13 @@ const CreateAssignment = () => {
                     value={formData.title}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </motion.div>
+                </div>
 
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
+                <div>
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                    Description *
+                    {t('assignment.fields.description')} *
                   </label>
                   <textarea
                     id="description"
@@ -185,60 +203,41 @@ const CreateAssignment = () => {
                     onChange={handleChange}
                     required
                     rows={5}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </motion.div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <CalendarIcon className="h-5 w-5 mr-2 text-blue-500" />
-                      Due Date *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      id="dueDate"
-                      name="dueDate"
-                      value={formData.dueDate}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    
-                  
-                  </motion.div>
                 </div>
 
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 }}
-                >
+                <div>
+                  <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <CalendarIcon className="h-5 w-5 mr-2 text-blue-500" />
+                    {t('assignment.fields.dueDate')} *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="dueDate"
+                    name="dueDate"
+                    value={formData.dueDate}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
                   <label htmlFor="file" className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                     <PaperClipIcon className="h-5 w-5 mr-2 text-blue-500" />
-                    Assignment File *
+                    {t('assignment.fields.file')} *
                   </label>
-                  <div className="mt-1 flex justify-center px-6 pt-8 pb-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 transition-colors bg-gray-50">
+                  <div className="mt-1 flex justify-center px-6 pt-8 pb-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
                     <div className="space-y-3 text-center">
                       <CloudArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
                       <div className="flex text-sm text-gray-600">
                         <label
                           htmlFor="file-upload"
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
                         >
-                          <span className="px-3 py-2 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors">
-                            Choose a file
+                          <span className="px-3 py-2 bg-blue-50 hover:bg-blue-100">
+                            {t('assignment.upload.choose')}
                           </span>
                           <input
                             id="file-upload"
@@ -249,54 +248,35 @@ const CreateAssignment = () => {
                             className="sr-only"
                           />
                         </label>
-                        <p className="pl-2 pt-2">or drag and drop</p>
+                        <p className="pl-2 pt-2">{t('assignment.upload.orDrag')}</p>
                       </div>
                       <p className="text-xs text-gray-500">
-                        PDF, DOCX, PPTX up to 10MB
+                        PDF, DOCX, PPTX {t('assignment.upload.limit')}
                       </p>
                       {formData.file && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="mt-3 flex items-center justify-center text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg"
-                        >
-                          <DocumentTextIcon className="h-4 w-4 mr-2" />
+                        <div className="mt-3 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                          <DocumentTextIcon className="h-4 w-4 mr-2 inline" />
                           {formData.file.name}
-                        </motion.div>
+                        </div>
                       )}
                     </div>
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="flex justify-end pt-4"
-                >
-                  <motion.button
+                <div className="flex justify-end pt-4">
+                  <button
                     type="submit"
                     disabled={loading}
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-600 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   >
-                    {loading ? (
-                      <span className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Creating Assignment...
-                      </span>
-                    ) : (
-                      <span className="flex items-center">
-                        <DocumentTextIcon className="h-5 w-5 mr-2" />
-                        Create Assignment
-                      </span>
+                    {loading ? t('assignment.submitting') : (
+                      <>
+                        <DocumentTextIcon className="h-5 w-5 inline mr-2" />
+                        {t('assignment.submit')}
+                      </>
                     )}
-                  </motion.button>
-                </motion.div>
+                  </button>
+                </div>
               </div>
             </form>
           </div>

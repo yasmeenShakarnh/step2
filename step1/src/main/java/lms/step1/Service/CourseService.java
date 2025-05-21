@@ -18,4 +18,6 @@ public interface CourseService {
     List<CourseDTO> getRecentCourses();
     void sendCourseUpdateNotification(String email, String courseTitle, String description, int duration);
     List<StudentCourseDTO> getInstructorStudents(String instructorUsername);
+        List<CourseDTO> getCoursesByInstructor(Long instructorId);
+
 }

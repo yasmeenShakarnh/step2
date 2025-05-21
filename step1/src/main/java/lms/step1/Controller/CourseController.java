@@ -174,7 +174,27 @@ public class CourseController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
+    @GetMapping("/instructor-courses")
+    @PreAuthorize("hasAuthority('INSTRUCTOR')")
+    public ResponseEntity<List<CourseDTO>> getInstructorCourses(Authentication authentication) {
+        try {
+            logger.info("Fetching courses for instructor: " + authentication.getName());
+            
+            // الحصول على المدرس الحالي
+            User instructor = userRepository.findByUsername(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("Instructor not found"));
+            
+            // جلب الكورسات الخاصة بهذا المدرس فقط
+            List<CourseDTO> courses = courseService.getCoursesByInstructor(instructor.getId());
+            
+            logger.info("Found " + courses.size() + " courses for instructor");
+            return ResponseEntity.ok(courses);
+        } catch (Exception e) {
+            logger.severe("Error getting instructor courses: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
     @GetMapping("/users/instructors")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<List<User>> getAllInstructors() {

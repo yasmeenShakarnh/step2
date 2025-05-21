@@ -44,9 +44,13 @@ public class Course {
     @JsonManagedReference
     private List<Assignment> assignments;
 
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+@OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JsonManagedReference(value = "course-enrollments")
     private List<Enrollment> enrollments;
+
+
+
+    
 
     @PrePersist
     protected void onCreate() {

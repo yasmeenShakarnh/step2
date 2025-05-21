@@ -19,7 +19,7 @@ public class CourseDTO {
     private String description;
 
     @Min(value = 1, message = "Course duration must be at least 1 hour")
-    private int duration;
+    private Integer  duration;
 
     private User instructor;
 

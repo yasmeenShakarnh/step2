@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { 
   CodeBracketIcon,
@@ -19,6 +20,7 @@ import {
 import ThreeDScene from '../components/ThreeDScene.jsx';
 
 const Home = () => {
+  const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({ 
     name: '', 
     email: '', 
@@ -51,42 +53,42 @@ const Home = () => {
   // Dummy Data
   const teachers = [
     { 
-      name: "Ahmed Ali", 
-      expertise: "Game Development Expert", 
-      exp: "10 years", 
+      name: t('teachers.ahmed.name'), 
+      expertise: t('teachers.ahmed.expertise'), 
+      exp: t('teachers.ahmed.exp'), 
       image: "https://as1.ftcdn.net/v2/jpg/03/81/38/78/1000_F_381387894_rtSaD0i9GRwm4IcHEiLKtXDlwOF2zhsh.jpg" 
     },
     { 
-      name: "Noura Mohamed", 
-      expertise: "Python Specialist", 
-      exp: "7 years", 
+      name: t('teachers.noura.name'), 
+      expertise: t('teachers.noura.expertise'), 
+      exp: t('teachers.noura.exp'), 
       image: "https://as1.ftcdn.net/v2/jpg/01/71/56/62/1000_F_171566206_IQVOkdKX4zDZiF4KCcgg4Zw1Gvycklcs.jpg" 
     },
     { 
-      name: "Omar Khalid", 
-      expertise: "Mobile App Developer", 
-      exp: "8 years", 
+      name: t('teachers.omar.name'), 
+      expertise: t('teachers.omar.expertise'), 
+      exp: t('teachers.omar.exp'), 
       image: "https://as1.ftcdn.net/v2/jpg/01/04/93/90/1000_F_104939054_E7P5jaVoNYcXQI7YBrzsVWH2qZc03sn8.jpg" 
     },
   ];
 
   const reviews = [
     {
-      name: "Sarah Johnson",
+      name: t('reviews.sarah.name'),
       age: 12,
-      text: "I learned Python so fast with CodeKids! The games make programming fun and easy!",
+      text: t('reviews.sarah.text'),
       image: "https://as2.ftcdn.net/v2/jpg/05/29/12/57/1000_F_529125762_omW1yTehDLLFJKwLJjRET0G3sXiQnK5g.jpg"
     },
     {
-      name: "Mike Chen",
+      name: t('reviews.mike.name'),
       age: 10,
-      text: "Best coding platform ever! I built my first website after just 2 weeks!",
+      text: t('reviews.mike.text'),
       image: "https://as1.ftcdn.net/v2/jpg/05/86/53/10/1000_F_586531028_Al6pWYEhlc9w8zUA9yu2vw2DS0o45Q0D.jpg"
     },
     {
-      name: "Emma Wilson",
+      name: t('reviews.emma.name'),
       age: 11,
-      text: "The teachers are amazing. I look forward to every lesson!",
+      text: t('reviews.emma.text'),
       image: "https://as1.ftcdn.net/v2/jpg/05/92/22/28/1000_F_592222897_VahacwkiNKhQ3bXkstliYEckwQXuOpF1.jpg"
     }
   ];
@@ -110,8 +112,14 @@ const Home = () => {
     });
   };
 
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-[#C7E2FC] text-blue-800 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-white to-[#C7E2FC] text-blue-800 relative overflow-hidden" dir={i18n.dir()}>
       {/* الخلفية المزخرفة باللون الأزرق الفاتح */}
       <motion.div 
         className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNGM0LjQxOCAwIDgtMy41ODIgOC04cy0zLjU4Mi04LTgtOC04IDMuNTgyLTggOCAzLjU4MiA4IDggOHoiIHN0cm9rZT0iI0M3RTJGQyIgc3Ryb2tlLW9wYWNpdHk9Ii4wMyIvPjwvZz48L3N2Zz4=')] opacity-10"
@@ -137,16 +145,16 @@ const Home = () => {
             >
               <SparklesIcon className="h-10 w-10 text-blue-600 animate-pulse" />
               <span className="ml-3 text-2xl font-bold text-blue-800 font-['Poppins']">
-                CodeKids
+                {t('appName')}
               </span>
             </motion.div>
             
             <div className="hidden lg:flex space-x-8">
               {[
-                { name: "Features", id: "#features", icon: <CodeBracketIcon className="h-5 w-5" /> },
-                { name: "Teachers", id: "#teachers", icon: <UserGroupIcon className="h-5 w-5" /> },
-                { name: "Reviews", id: "#reviews", icon: <ChatBubbleBottomCenterTextIcon className="h-5 w-5" /> },
-                { name: "Contact", id: "#contact", icon: <EnvelopeIcon className="h-5 w-5" /> },
+                { name: t('nav.features'), id: "#features", icon: <CodeBracketIcon className="h-5 w-5" /> },
+                { name: t('nav.teachers'), id: "#teachers", icon: <UserGroupIcon className="h-5 w-5" /> },
+                { name: t('nav.reviews'), id: "#reviews", icon: <ChatBubbleBottomCenterTextIcon className="h-5 w-5" /> },
+                { name: t('nav.contact'), id: "#contact", icon: <EnvelopeIcon className="h-5 w-5" /> },
               ].map((item, index) => (
                 <motion.div
                   key={index}
@@ -166,18 +174,35 @@ const Home = () => {
               ))}
             </div>
 
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-            >
-               <Link 
-                to="/login"
-                className="px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium hover:from-blue-700 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            <div className="flex items-center gap-4">
+              <motion.button
+                onClick={() => changeLanguage('en')}
+                className={`px-3 py-1 rounded-md ${i18n.language === 'en' ? 'bg-blue-100 text-blue-700' : 'text-blue-500'}`}
+                whileHover={{ scale: 1.05 }}
               >
-                Get Started
-              </Link>
-            </motion.div>
+                English
+              </motion.button>
+              <motion.button
+                onClick={() => changeLanguage('ar')}
+                className={`px-3 py-1 rounded-md ${i18n.language === 'ar' ? 'bg-blue-100 text-blue-700' : 'text-blue-500'}`}
+                whileHover={{ scale: 1.05 }}
+              >
+                العربية
+              </motion.button>
+              
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+              >
+                <Link 
+                  to="/login"
+                  className="px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium hover:from-blue-700 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                >
+                  {t('getStarted')}
+                </Link>
+              </motion.div>
+            </div>
           </div>
         </div>
       </motion.nav>
@@ -203,7 +228,7 @@ const Home = () => {
                 initial={{ y: 30 }}
                 animate={{ y: 0 }}
               >
-                Learn Coding
+                {t('hero.title1')}
               </motion.span>
               <motion.span
                 className="text-cyan-500 block mt-4"
@@ -211,7 +236,7 @@ const Home = () => {
                 animate={{ y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                Through Play!
+                {t('hero.title2')}
               </motion.span>
             </motion.h1>
 
@@ -221,7 +246,7 @@ const Home = () => {
               initial="hidden"
               animate="visible"
             >
-              Join thousands of kids learning programming through interactive games and exciting projects!
+              {t('hero.subtitle')}
             </motion.p>
 
             <motion.div
@@ -234,7 +259,7 @@ const Home = () => {
                 to="/login" 
                 className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-full text-lg hover:from-blue-700 hover:to-cyan-600 transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-1 flex items-center group"
               >
-                Start Journey
+                {t('startJourney')}
                 <CommandLineIcon className="h-5 w-5 ml-2 group-hover:rotate-45 transition-transform" />
               </Link>
             </motion.div>
@@ -267,18 +292,18 @@ const Home = () => {
             {[ 
               {
                 icon: <PuzzlePieceIcon className="h-14 w-14 text-blue-600" />,
-                title: "Interactive Learning",
-                description: "Hands-on coding projects that develop problem-solving skills"
+                title: t('features.interactive.title'),
+                description: t('features.interactive.description')
               },
               {
                 icon: <AcademicCapIcon className="h-14 w-14 text-blue-600" />,
-                title: "Expert Instructors",
-                description: "Child-friendly teaching methods from certified professionals"
+                title: t('features.experts.title'),
+                description: t('features.experts.description')
               },
               {
                 icon: <SparklesIcon className="h-14 w-14 text-blue-600" />,
-                title: "Fun Experience",
-                description: "Game-based learning with achievements and rewards"
+                title: t('features.fun.title'),
+                description: t('features.fun.description')
               }
             ].map((feature, index) => (
               <motion.div 
@@ -315,7 +340,7 @@ const Home = () => {
               variants={fadeInUp}
               className="text-3xl font-bold text-blue-800 mb-12"
             >
-              Our Professional Team
+              {t('teachersSection.title')}
             </motion.h2>
             
             <motion.div 
@@ -344,7 +369,7 @@ const Home = () => {
                   <h3 className="text-xl font-bold text-blue-800">{teacher.name}</h3>
                   <p className="text-blue-600 mt-2">{teacher.expertise}</p>
                   <div className="mt-4 bg-blue-100 px-4 py-2 rounded-full text-sm">
-                    {teacher.exp} experience
+                    {teacher.exp} {t('experience')}
                   </div>
                 </motion.div>
               ))}
@@ -365,7 +390,7 @@ const Home = () => {
               variants={fadeInUp}
               className="text-3xl font-bold text-blue-800 mb-12"
             >
-              Student Success Stories
+              {t('reviewsSection.title')}
             </motion.h2>
             
             <motion.div 
@@ -388,7 +413,7 @@ const Home = () => {
                     />
                   </div>
                   <h3 className="text-xl font-bold text-blue-800">{review.name}</h3>
-                  <p className="text-blue-500 text-sm mb-4">Age {review.age}</p>
+                  <p className="text-blue-500 text-sm mb-4">{t('age')} {review.age}</p>
                   <p className="text-blue-600 italic">"{review.text}"</p>
                   <div className="mt-4 flex justify-center space-x-1">
                     {[...Array(5)].map((_, i) => (
@@ -418,7 +443,7 @@ const Home = () => {
               variants={fadeInUp}
               className="text-3xl font-bold text-blue-800 mb-12"
             >
-              Contact Us
+              {t('contact.title')}
           </motion.h2>
             <div className="max-w-2xl mx-auto text-center">
               {formState.submitted ? (
@@ -436,10 +461,10 @@ const Home = () => {
                   >
                     <CheckCircleIcon className="h-20 w-20 text-green-600 mb-4" />
                     <h3 className="text-2xl font-bold text-green-700 mb-2">
-                      Thank You! 🎉
+                      {t('contact.successTitle')} 🎉
                     </h3>
                     <p className="text-green-600">
-                      Your message has been sent successfully!
+                      {t('contact.successMessage')}
                     </p>
                   </motion.div>
                 </motion.div>
@@ -449,7 +474,7 @@ const Home = () => {
                     <input 
                       type="text"
                       name="name"
-                      placeholder="Full Name"
+                      placeholder={t('contact.form.name')}
                       className="p-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       value={formData.name}
                       onChange={handleInputChange}
@@ -458,7 +483,7 @@ const Home = () => {
                     <input 
                       type="email"
                       name="email"
-                      placeholder="Email Address"
+                      placeholder={t('contact.form.email')}
                       className="p-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       value={formData.email}
                       onChange={handleInputChange}
@@ -468,7 +493,7 @@ const Home = () => {
                   <textarea 
                     rows="4"
                     name="message"
-                    placeholder="Your Message"
+                    placeholder={t('contact.form.message')}
                     className="w-full p-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     value={formData.message}
                     onChange={handleInputChange}
@@ -487,10 +512,10 @@ const Home = () => {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Sending...
+                        {t('contact.sending')}
                       </div>
                     ) : (
-                      'Send Message'
+                      t('contact.sendButton')
                     )}
                   </motion.button>
                 </form>
@@ -509,7 +534,7 @@ const Home = () => {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-blue-600 font-['Comic_Neue']">
-            © {new Date().getFullYear()} CodeKids. All rights reserved
+            © {new Date().getFullYear()} {t('appName')}. {t('footer.rights')}
           </p>
         </div>
       </motion.footer>
