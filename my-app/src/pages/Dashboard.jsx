@@ -9,6 +9,10 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, FormControl, InputLabel,
   Tooltip, Avatar
 } from '@mui/material';
+import { useTheme, useMediaQuery } from '@mui/material';
+
+import { GlobeAltIcon } from '@heroicons/react/24/outline';
+
 import {
   Dashboard as DashboardIcon,
   School as SchoolIcon,
@@ -27,9 +31,13 @@ import {
 import { AuthContext } from '../context/AuthContext.js';
 import axios from 'axios';
 import InfoIcon from '@mui/icons-material/Info';
+import { useTranslation } from 'react-i18next';
+
 
 const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
+    const { t, i18n } = useTranslation();
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
@@ -51,7 +59,35 @@ const Dashboard = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [roleFilter, setRoleFilter] = useState('ALL');
   const navigate = useNavigate();
-
+// في بداية الملف، أضف هذه الثوابت للتحكم في الأحجام
+const responsiveStyles = {
+  drawerWidth: {
+    xs: 240, // للهواتف
+    sm: 280  // للأجهزة الأكبر
+  },
+  mainPadding: {
+    xs: 2,   // هواتف
+    sm: 3    // أجهزة أكبر
+  },
+  cardSpacing: {
+    xs: 2,   // هواتف
+    sm: 3    // أجهزة أكبر
+  },
+  fontSize: {
+    small: {
+      xs: '0.75rem',
+      sm: '0.875rem'
+    },
+    medium: {
+      xs: '1rem',
+      sm: '1.25rem'
+    },
+    large: {
+      xs: '1.5rem',
+      sm: '2rem'
+    }
+  }
+};
   // Color Scheme
   const colors = {
     primary: '#3498db', // Blue
@@ -225,6 +261,68 @@ const Dashboard = () => {
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+  // استخدم هذا المكون للجداول على الهواتف
+const ResponsiveTable = ({ data, columns }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  if (isMobile) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        gap: 2 
+      }}>
+        {data.map((row, index) => (
+          <Card key={index} sx={{ mb: 2 }}>
+            <CardContent sx={{ p: 2 }}>
+              {columns.map((column) => (
+                <Box key={column.key} sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  mb: 1,
+                  '&:last-child': { mb: 0 }
+                }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {column.header}:
+                  </Typography>
+                  <Typography variant="body2">
+                    {column.render ? column.render(row) : row[column.key]}
+                  </Typography>
+                </Box>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
+    );
+  }
+
+  return (
+    <TableContainer component={Paper}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            {columns.map((column) => (
+              <TableCell key={column.key}>{column.header}</TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {data.map((row, index) => (
+            <TableRow key={index}>
+              {columns.map((column) => (
+                <TableCell key={column.key}>
+                  {column.render ? column.render(row) : row[column.key]}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+};
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -237,7 +335,11 @@ const Dashboard = () => {
   const handleNotificationsClose = () => {
     setNotificationsAnchorEl(null);
   };
-
+const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
+  };
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -411,7 +513,7 @@ const Dashboard = () => {
             <DashboardIcon />
           </ListItemIcon>
           <ListItemText 
-            primary="Dashboard" 
+          primary={t('dashboard.menu.dashboard')} 
             primaryTypographyProps={{ 
               fontSize: '1rem',
               fontWeight: 600 
@@ -443,7 +545,7 @@ const Dashboard = () => {
             <SchoolIcon />
           </ListItemIcon>
           <ListItemText 
-            primary="Courses" 
+          primary={t('dashboard.menu.courses')} 
             primaryTypographyProps={{ 
               fontSize: '1rem',
               fontWeight: 600 
@@ -953,7 +1055,7 @@ const Dashboard = () => {
                   <SchoolIcon sx={{ color: colors.primary }} />
                 </Box>
                 <Typography variant="h6" sx={{ color: colors.textDark, fontWeight: 600 }}>
-                Courses Taught
+                {t('dashboard.instructor.coursesTaught')}
               </Typography>
               </Box>
               <Typography variant="h4" sx={{ 
@@ -1140,7 +1242,8 @@ const Dashboard = () => {
                   <SchoolIcon sx={{ color: colors.primary }} />
                 </Box>
                 <Typography variant="h6" sx={{ color: colors.textDark, fontWeight: 600 }}>
-              Professors
+                              {t('dashboard.student.professors')}
+
             </Typography>
               </Box>
               <Typography variant="h4" sx={{ 
@@ -1177,7 +1280,7 @@ const Dashboard = () => {
                   <ClassIcon sx={{ color: colors.secondary }} />
                 </Box>
                 <Typography variant="h6" sx={{ color: colors.textDark, fontWeight: 600 }}>
-              My Courses
+                {t('dashboard.admin.totalUsers')}
             </Typography>
               </Box>
               <Typography variant="h4" sx={{ 
@@ -1311,7 +1414,7 @@ const Dashboard = () => {
   </Box>
 );
 
-  return (
+return (
     <Box sx={{ 
       display: 'flex', 
       bgcolor: colors.background,
@@ -1320,49 +1423,107 @@ const Dashboard = () => {
       position: 'relative'
     }}>
       <AppBar
-        position="fixed"
-        sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          bgcolor: 'rgba(255, 255, 255, 0.9)',
-          color: colors.textDark,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-          borderBottom: `1px solid ${colors.border}`,
-          height: '80px',
-          backdropFilter: 'blur(8px)'
-        }}
-      >
-        <Toolbar sx={{ height: '100%' }}>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ 
-              mr: 2, 
-              display: { sm: 'none' }, 
-              color: colors.primary 
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography 
-            variant="h6" 
-            noWrap 
-            component="div" 
-            sx={{ 
-              flexGrow: 1,
-              fontWeight: 700,
-              color: colors.textDark,
-              fontSize: '1.5rem',
-              background: colors.gradient,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}
-          >
-            LMS Dashboard
-          </Typography>
+  position="fixed"
+  sx={{
+    zIndex: (theme) => theme.zIndex.drawer + 1,
+    bgcolor: 'rgba(255, 255, 255, 0.9)',
+    color: colors.textDark,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+    borderBottom: `1px solid ${colors.border}`,
+    height: {
+      xs: '60px', // هواتف
+      sm: '80px'  // أجهزة أكبر
+    },
+    backdropFilter: 'blur(8px)'
+  }}
+>
+  <Toolbar sx={{ 
+    height: '100%',
+    px: {
+      xs: 1, // هواتف
+      sm: 2  // أجهزة أكبر
+    }
+  }}>
+    <IconButton
+      color="inherit"
+      aria-label="open drawer"
+      edge="start"
+      onClick={handleDrawerToggle}
+      sx={{ 
+        mr: 2, 
+        display: { md: 'none' }, // إظهار زر القائمة فقط على الهواتف
+        color: colors.primary 
+      }}
+    >
+      <MenuIcon />
+    </IconButton>
+    
+    <Typography 
+      variant="h6" 
+      noWrap 
+      component="div" 
+      sx={{ 
+        flexGrow: 1,
+        fontWeight: 700,
+        color: colors.textDark,
+        fontSize: {
+          xs: '1.25rem', // هواتف
+          sm: '1.5rem'   // أجهزة أكبر
+        },
+        background: colors.gradient,
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent'
+      }}
+    >
+      {t('dashboard.title')}
+    </Typography>
           
-          <div>
+          {/* Language Toggle */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            mr: 2,
+            bgcolor: 'rgba(255, 255, 255, 0.9)',
+            borderRadius: '24px',
+            p: '2px',
+            border: `1px solid ${colors.border}`
+          }}>
+            <GlobeAltIcon sx={{ 
+              color: colors.textLight, 
+              fontSize: '1.2rem',
+              ml: 1
+            }} />
+            <Button
+              onClick={() => changeLanguage('en')}
+              sx={{
+                minWidth: 'auto',
+                px: 1.5,
+                fontSize: '0.75rem',
+                fontWeight: i18n.language === 'en' ? 600 : 400,
+                color: i18n.language === 'en' ? colors.primary : colors.textLight,
+                textTransform: 'uppercase'
+              }}
+            >
+              EN
+            </Button>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+            <Button
+              onClick={() => changeLanguage('ar')}
+              sx={{
+                minWidth: 'auto',
+                px: 1.5,
+                fontSize: '0.75rem',
+                fontWeight: i18n.language === 'ar' ? 600 : 400,
+                color: i18n.language === 'ar' ? colors.primary : colors.textLight,
+                textTransform: 'uppercase'
+              }}
+            >
+              AR
+            </Button>
+          </Box>
+
+          {/* Notification and Profile Icons */}
+          <Box>
             <IconButton
               size="large"
               aria-label="show notifications"
@@ -1432,7 +1593,7 @@ const Dashboard = () => {
                 <ListItemIcon sx={{ color: colors.primary }}>
                   <AccountCircleIcon fontSize="small" />
                 </ListItemIcon>
-                <Typography variant="body1">User Profile</Typography>
+                <Typography variant="body1">{t('dashboard.menu.profile')}</Typography>
               </MenuItem>
               <MenuItem 
                 onClick={handleLogout}
@@ -1447,122 +1608,131 @@ const Dashboard = () => {
                 <ListItemIcon sx={{ color: colors.error }}>
                   <LogoutIcon fontSize="small" />
                 </ListItemIcon>
-                <Typography variant="body1">Logout</Typography>
+                <Typography variant="body1">{t('dashboard.menu.logout')}</Typography>
               </MenuItem>
             </Menu>
-          </div>
+          </Box>
         </Toolbar>
       </AppBar>
 
-      <Box component="nav" sx={{ 
-        width: { sm: 280 }, 
-        flexShrink: { sm: 0 },
-        '& .MuiDrawer-paper': {
-          bgcolor: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(8px)',
-          borderRight: `1px solid ${colors.border}`
+      {/* Navigation Drawer */}
+     <Box component="nav" sx={{ 
+  width: { 
+    sm: responsiveStyles.drawerWidth.sm 
+  }, 
+  flexShrink: { sm: 0 }
+}}>
+  <Drawer
+    variant="temporary"
+    open={mobileOpen}
+    onClose={handleDrawerToggle}
+    ModalProps={{ keepMounted: true }}
+    sx={{
+      display: { xs: 'block', sm: 'none' },
+      '& .MuiDrawer-paper': { 
+        boxSizing: 'border-box', 
+        width: responsiveStyles.drawerWidth.xs,
+        bgcolor: colors.white,
+        borderRight: `1px solid ${colors.border}`
+      },
+    }}
+  >
+    {drawer}
+  </Drawer>
+  <Drawer
+    variant="permanent"
+    sx={{
+      display: { xs: 'none', sm: 'block' },
+      '& .MuiDrawer-paper': { 
+        boxSizing: 'border-box', 
+        width: responsiveStyles.drawerWidth.sm,
+        bgcolor: colors.white,
+        borderRight: `1px solid ${colors.border}`
+      },
+    }}
+    open
+  >
+    {drawer}
+  </Drawer>
+</Box>
+      {/* Main Content */}
+    <Box
+  component="main"
+  sx={{ 
+    flexGrow: 1, 
+    p: responsiveStyles.mainPadding,
+    width: { 
+      sm: `calc(100% - ${responsiveStyles.drawerWidth.sm}px)` 
+    },
+    background: 'linear-gradient(to bottom, #ffffff, #C7E2FC)',
+    minHeight: '100vh',
+    position: 'relative',
+    pb: { 
+      xs: 8, // مساحة لأسفل للهواتف
+      sm: 3  // مساحة أقل للأجهزة الكبيرة
+    },
+  }}
+>
+  <Toolbar sx={{ 
+    height: {
+      xs: '60px', // هواتف
+      sm: '80px'  // أجهزة أكبر
+    } 
+  }} />
+  
+  {/* تحسين عنوان الصفحة */}
+  <Box sx={{ 
+    mb: 4,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+    flexDirection: {
+      xs: 'column', // هواتف
+      sm: 'row'     // أجهزة أكبر
+    },
+    alignItems: {
+      xs: 'flex-start', // هواتف
+      sm: 'center'      // أجهزة أكبر
+    }
+  }}>
+    <Typography 
+      variant="h4" 
+      sx={{ 
+        color: colors.textDark, 
+        fontWeight: 700,
+        fontSize: responsiveStyles.fontSize.large,
+        background: colors.gradient,
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        position: 'relative',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: -8,
+          left: 0,
+          width: '60px',
+          height: '4px',
+          background: colors.gradient,
+          borderRadius: '2px'
         }
-      }}>
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
-              width: 280,
-              bgcolor: colors.white,
-              borderRight: `1px solid ${colors.border}`
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
-              width: 280,
-              bgcolor: colors.white,
-              borderRight: `1px solid ${colors.border}`
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-      </Box>
+      }}
+    >
+      {t('dashboard.welcome', { name: user?.firstName })}
+    </Typography>
+  </Box>
 
-      <Box
-        component="main"
-        sx={{ 
-          flexGrow: 1, 
-          p: 4, 
-          width: { sm: `calc(100% - 280px)` },
-          background: 'linear-gradient(to bottom, #ffffff, #C7E2FC)',
-          minHeight: '100vh',
-          position: 'relative',
-          pb: { xs: 8, sm: 8 },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'radial-gradient(circle at top right, rgba(52, 152, 219, 0.1), transparent 40%), radial-gradient(circle at bottom left, rgba(46, 204, 113, 0.1), transparent 40%)',
-            pointerEvents: 'none'
-          }
-        }}
-      >
-        <Toolbar sx={{ height: '80px' }} />
-        <Box sx={{ 
-          mb: 4,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          position: 'relative'
-        }}>
-        <Typography 
-          variant="h4" 
-          sx={{ 
-            color: colors.textDark, 
-            fontWeight: 700,
-              fontSize: '2rem',
-              background: colors.gradient,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              position: 'relative',
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: -8,
-                left: 0,
-                width: '60px',
-                height: '4px',
-                background: colors.gradient,
-                borderRadius: '2px'
-              }
-          }}
-        >
-          Welcome back, {user?.firstName}!
-        </Typography>
-        </Box>
-
+        {/* Role-based Dashboard Content */}
         {user?.role === 'ADMIN' && renderAdminDashboard()}
         {user?.role === 'INSTRUCTOR' && renderInstructorDashboard()}
         {user?.role === 'STUDENT' && renderStudentDashboard()}
       </Box>
 
-      {/* Navigation Footer - Now visible on all screens */}
+      {/* Bottom Navigation Footer */}
       <Box
         sx={{
           position: 'fixed',
           bottom: 0,
-          left: { xs: 0, sm: 280 }, // Adjust left position based on sidebar
+          left: { xs: 0, sm: 280 },
           right: 0,
           bgcolor: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(8px)',
@@ -1612,7 +1782,7 @@ const Dashboard = () => {
                 fontSize: { xs: '0.75rem', sm: '0.875rem' }
               }}
             >
-              Home
+              {t('dashboard.menu.home')}
             </Typography>
           </Button>
 
@@ -1646,7 +1816,7 @@ const Dashboard = () => {
                 fontSize: { xs: '0.75rem', sm: '0.875rem' }
               }}
             >
-              Courses
+              {t('dashboard.menu.courses')}
             </Typography>
           </Button>
 
@@ -1679,13 +1849,11 @@ const Dashboard = () => {
                 fontSize: { xs: '0.75rem', sm: '0.875rem' }
               }}
             >
-              Logout
+              {t('dashboard.menu.logout')}
             </Typography>
           </Button>
         </Box>
       </Box>
     </Box>
-  );
-};
-
+  );};
 export default Dashboard;

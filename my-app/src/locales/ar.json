@@ -459,5 +459,89 @@
   },
   "errors": {
     "noToken": "لم يتم العثور على رمز المصادقة"
+  },
+  "courses": {
+      "titles": {
+        "instructorCourses": "دوراتي التعليمية",
+        "availableCourses": "الدورات المتاحة",
+        "deleteCourse": "حذف الدورة"
+      },
+      "subtitles": {
+        "instructorSubtitle": "الدورات المسندة إليك",
+        "availableSubtitle": "تصفح وادار جميع البرامج التعليمية المتاحة"
+      },
+      "buttons": {
+        "refresh": "تحديث",
+        "addCourse": "إضافة دورة",
+        "createFirstCourse": "إنشاء أول دورة",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "assignInstructor": "تعيين مدرس",
+        "enroll": "تسجيل",
+        "unEnroll": "إلغاء التسجيل",
+        "cancel": "إلغاء",
+        "confirm": "تأكيد"
+      },
+      "messages": {
+        "noCoursesInstructor": "لا توجد دورات مسندة إليك بعد",
+        "noCoursesAvailable": "لا توجد دورات متاحة",
+        "contactAdmin": "يرجى التواصل مع المسؤول لتعيينك في دورات",
+        "checkBack": "تحقق لاحقًا أو اتصل بالدعم لمزيد من المعلومات.",
+        "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذه الدورة؟ لا يمكن التراجع عن هذا الإجراء.",
+        "serverError": "خطأ في الخادم. يرجى الاتصال بالمسؤول.",
+        "loadCoursesError": "فشل تحميل الدورات. يرجى المحاولة مرة أخرى لاحقًا."
+      },
+      "labels": {
+        "instructor": "المدرس",
+        "category": "الفئة",
+        "general": "عام"
+      }
+    },
+  "dashboard": {
+    "title": "منصة التعلم",
+    "welcome": "مرحباً، {{name}}!",
+    "menu": {
+      "dashboard": "لوحة التحكم",
+      "courses": "الدورات",
+      "home": "الرئيسية",
+      "profile": "الملف الشخصي",
+      "logout": "تسجيل الخروج"
+    },
+    "admin": {
+      "totalUsers": "إجمالي المستخدمين",
+      "userManagement": "إدارة المستخدمين"
+    },
+    "instructor": {
+      "coursesTaught": "الدورات التي أدرسها",
+      "totalStudents": "إجمالي الطلاب"
+    },
+    "student": {
+      "professors": "المدرسون",
+      "myCourses": "دوراتي",
+      "enrolledCourses": "الدورات المسجل فيها",
+      "completed": "مكتمل",
+      "inProgress": "قيد التقدم"
+    },
+    "common": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "confirm": "تأكيد",
+      "firstName": "الاسم الأول",
+      "lastName": "الاسم الأخير",
+      "role": "الدور",
+      "email": "البريد الإلكتروني",
+      "actions": "الإجراءات",
+      "allRoles": "جميع الأدوار",
+      "admin": "مدير",
+      "instructor": "مدرس",
+      "student": "طالب",
+      "status": "الحالة",
+      "enrolledAt": "تاريخ التسجيل",
+      "noCourses": "أنت غير مسجل في أي دورات حتى الآن",
+      "confirmDelete": "هل أنت متأكد أنك تريد حذف {{firstName}} {{lastName}}؟ لا يمكن التراجع عن هذا الإجراء."
+    }
   }
+
 }

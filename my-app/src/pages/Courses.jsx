@@ -1,25 +1,58 @@
 import { useEffect, useState, useCallback, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import {
   BookOpenIcon,
   AcademicCapIcon,
-  ClockIcon,
   ArrowPathIcon,
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  UserPlusIcon
+  UserPlusIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
-// أضف هذا الاستيراد في أعلى الملف
-import CourseFormModal from './CourseFormModal.js';
-import AssignInstructorModal from './AssignInstructorModal.js';
-import { AuthContext } from '../context/AuthContext.js';
+import CourseFormModal from './CourseFormModal';
+import AssignInstructorModal from './AssignInstructorModal';
+import { AuthContext } from '../context/AuthContext';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useTranslation } from 'react-i18next';
+import {
+  AppBar,
+  Toolbar,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  IconButton,
+  Menu,
+  MenuItem,
+  Button,
+  Box,
+  Typography,
+  Avatar,
+  Chip,
+  Paper
+} from '@mui/material';
+import {
+  Dashboard as DashboardIcon,
+  School as SchoolIcon,
+  Menu as MenuIcon,
+  Logout as LogoutIcon,
+  AccountCircle as AccountCircleIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon
+} from '@mui/icons-material';
+
+const drawerWidth = 240;
+const collapsedWidth = 73;
 
 const Courses = () => {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
+  const { t, i18n } = useTranslation();
 
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,24 +64,100 @@ const Courses = () => {
   const [currentCourse, setCurrentCourse] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [instructors, setInstructors] = useState([]);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Color Scheme
+  const colors = {
+    primary: '#3f51b5',
+    secondary: '#4caf50',
+    background: '#f5f7fa',
+    cardBg: '#ffffff',
+    textDark: '#2c3e50',
+    textLight: '#7f8c8d',
+    white: '#ffffff',
+    border: '#e0e0e0',
+    error: '#f44336',
+    success: '#4caf50',
+    warning: '#ff9800',
+    gradient: 'linear-gradient(to right, #3f51b5, #4caf50)'
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
+  };
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const handleMenu = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+    handleClose();
+  };
 
   const fetchCourses = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost:8080/courses', {
+      setLoading(true);
+      let url = 'http://localhost:8080/courses';
+      let params = {};
+
+      if (user?.role === 'INSTRUCTOR') {
+        url = 'http://localhost:8080/courses';
+        params = { instructorId: user.id };
+      }
+
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-        }
+        },
+        params
       });
-      setCourses(response.data);
+
+      let filteredCourses = response.data;
+      
+      if (user?.role === 'INSTRUCTOR') {
+        filteredCourses = response.data.filter(course => 
+          course.instructor && course.instructor.id === user.id
+        );
+      }
+      
+      setCourses(filteredCourses);
       setError(null);
     } catch (err) {
       console.error('Error fetching courses:', err);
-      setError('Failed to fetch courses. Please try again later.');
+      if (err.response?.status === 500) {
+        setError(t('courses.messages.serverError'));
+      } else {
+        setError(t('courses.messages.loadCoursesError'));
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [user, t]);
 
   const fetchInstructors = useCallback(async () => {
     try {
@@ -89,7 +198,9 @@ const Courses = () => {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchCourses();
-    fetchEnrollments();
+    if (user?.role === 'STUDENT') {
+      fetchEnrollments();
+    }
     if (user?.role === 'ADMIN') {
       fetchInstructors();
     }
@@ -109,7 +220,7 @@ const Courses = () => {
       setIsAssignModalOpen(false);
     } catch (err) {
       console.error('Assigning instructor failed:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'Failed to assign instructor. Please check the instructor ID and try again.');
+      setError(err.response?.data?.message || t('courses.messages.assignError'));
     }
   };
   
@@ -125,7 +236,7 @@ const Courses = () => {
       fetchCourses();
     } catch (err) {
       console.error('Assign self failed:', err);
-      setError('Could not assign yourself to this course. You may already be assigned or the course may not exist.');
+      setError(t('courses.messages.assignSelfError'));
     }
   };
   
@@ -140,7 +251,7 @@ const Courses = () => {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error creating course:', error);
-      setError('Failed to create course. Please try again.');
+      setError(t('courses.messages.createError'));
     }
   };
 
@@ -156,7 +267,7 @@ const Courses = () => {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error updating course:', error.response?.data || error.message);
-      setError(error.response?.data?.message || 'Failed to update course. Please try again.');
+      setError(error.response?.data?.message || t('courses.messages.updateError'));
     }
   };
 
@@ -171,21 +282,28 @@ const Courses = () => {
       fetchEnrollments();
     } catch (err) {
       console.error('Unenrollment failed:', err);
-      setError('Could not unenroll from course.');
+      setError(t('courses.messages.unenrollError'));
     }
   };
 
-  const handleDeleteCourse = async (courseId) => {
+  const handleDeleteCourse = (courseId) => {
+    setCourseToDelete(courseId);
+    setShowConfirmDialog(true);
+  };
+
+  const confirmDeleteCourse = async () => {
     try {
-      await axios.delete(`http://localhost:8080/courses/${courseId}`, {
+      const token = localStorage.getItem('accessToken');
+      await axios.delete(`http://localhost:8080/courses/${courseToDelete}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+          Authorization: `Bearer ${token}`
         }
       });
-      fetchCourses();
-    } catch (error) {
-      console.error('Error deleting course:', error);
-      setError('Failed to delete course. Please try again.');
+      setCourses(courses.filter(course => course.id !== courseToDelete));
+      setShowConfirmDialog(false);
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      setError(t('courses.messages.deleteError'));
     }
   };
 
@@ -199,7 +317,7 @@ const Courses = () => {
       fetchEnrollments();
     } catch (err) {
       console.error('Enrollment failed:', err);
-      setError('Could not enroll in course. You may already be enrolled or the course may be full.');
+      setError(t('courses.messages.enrollError'));
     }
   };
 
@@ -211,244 +329,805 @@ const Courses = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        bgcolor: colors.background
+      }}>
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="h-12 w-12 rounded-full border-4 border-purple-500 border-t-transparent"
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            border: `4px solid ${colors.primary}`,
+            borderTopColor: 'transparent'
+          }}
         />
-      </div>
+      </Box>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-7xl mx-auto"
-      >
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <BookOpenIcon className="h-8 w-8 text-purple-600" />
-              Available Courses
-            </h1>
-            <p className="text-gray-600 mt-2">Explore our comprehensive learning programs</p>
-          </div>
-
-          <div className="flex gap-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              <ArrowPathIcon className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </motion.button>
-
-            {user?.role === 'ADMIN' && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setEditingCourse(null);
-                  setIsModalOpen(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Add Course
-              </motion.button>
-            )}
-          </div>
-        </div>
-
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded"
-          >
-            <p>{error}</p>
-          </motion.div>
+  const drawer = (
+    <Box>
+      <Toolbar sx={{ 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        px: 2,
+        minHeight: '64px !important',
+        bgcolor: colors.white,
+        borderBottom: `1px solid ${colors.border}`
+      }}>
+        {!sidebarCollapsed && (
+          <Typography variant="h6" noWrap sx={{ 
+            fontWeight: 600,
+            color: colors.primary
+          }}>
+            {t('app.name')}
+          </Typography>
         )}
+        <IconButton onClick={toggleSidebar} size="small">
+          {sidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        </IconButton>
+      </Toolbar>
+      <Divider />
+      <List sx={{ px: 1 }}>
+        <ListItem 
+          button 
+          component={Link} 
+          to="/dashboard"
+          sx={{ 
+            borderRadius: '8px',
+            mx: 1,
+            mb: 0.5,
+            py: 1,
+            '&:hover': { 
+              bgcolor: 'rgba(63, 81, 181, 0.1)'
+            },
+            '&.Mui-selected': {
+              bgcolor: 'rgba(63, 81, 181, 0.08)'
+            }
+          }}
+        >
+          <ListItemIcon sx={{ 
+            color: colors.textDark,
+            minWidth: '40px',
+            justifyContent: 'center'
+          }}>
+            <DashboardIcon />
+          </ListItemIcon>
+          {!sidebarCollapsed && (
+            <ListItemText 
+              primary={t('dashboard.menu.dashboard')} 
+              primaryTypographyProps={{ 
+                fontSize: '0.875rem',
+                fontWeight: 500 
+              }}
+            />
+          )}
+        </ListItem>
+        <ListItem 
+          button 
+          component={Link} 
+          to="/courses"
+          selected
+          sx={{ 
+            borderRadius: '8px',
+            mx: 1,
+            mb: 0.5,
+            py: 1,
+            '&:hover': { 
+              bgcolor: 'rgba(63, 81, 181, 0.1)'
+            },
+            '&.Mui-selected': {
+              bgcolor: 'rgba(63, 81, 181, 0.08)'
+            }
+          }}
+        >
+          <ListItemIcon sx={{ 
+            color: colors.primary,
+            minWidth: '40px',
+            justifyContent: 'center'
+          }}>
+            <SchoolIcon />
+          </ListItemIcon>
+          {!sidebarCollapsed && (
+            <ListItemText 
+              primary={t('dashboard.menu.courses')} 
+              primaryTypographyProps={{ 
+                fontSize: '0.875rem',
+                fontWeight: 500 
+              }}
+            />
+          )}
+        </ListItem>
+      </List>
+    </Box>
+  );
 
-        {courses.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-sm p-8 text-center"
+  return (
+    <Box sx={{ 
+      display: 'flex', 
+      bgcolor: colors.background,
+      minHeight: '100vh'
+    }}>
+      {/* App Bar */}
+      <AppBar
+        position="fixed"
+        sx={{
+          width: { sm: `calc(100% - ${sidebarCollapsed ? collapsedWidth : drawerWidth}px)` },
+          ml: { sm: `${sidebarCollapsed ? collapsedWidth : drawerWidth}px` },
+          bgcolor: 'rgba(255, 255, 255, 0.95)',
+          color: colors.textDark,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          borderBottom: `1px solid ${colors.border}`,
+          backdropFilter: 'blur(8px)'
+        }}
+      >
+        <Toolbar sx={{ minHeight: '64px !important' }}>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ 
+              mr: 2, 
+              display: { sm: 'none' }, 
+              color: colors.primary 
+            }}
           >
-            <AcademicCapIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No courses available</h3>
-            <p className="mt-1 text-gray-500">Check back later or contact support.</p>
-            {user?.role === 'ADMIN' && (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            <MenuIcon />
+          </IconButton>
+          <Typography 
+            variant="h6" 
+            noWrap 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              fontWeight: 600,
+              color: colors.textDark,
+              fontSize: '1.25rem'
+            }}
+          >
+            {user?.role === 'INSTRUCTOR' ? t('courses.titles.instructorCourses') : t('courses.titles.availableCourses')}
+          </Typography>
+          
+          {/* Language Toggle */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            mr: 2,
+            bgcolor: 'rgba(255, 255, 255, 0.9)',
+            borderRadius: '24px',
+            p: '2px',
+            border: `1px solid ${colors.border}`
+          }}>
+            <GlobeAltIcon style={{ width: 20, height: 20, color: colors.textLight, marginLeft: 8 }} />
+            <Button
+              onClick={() => changeLanguage('en')}
+              sx={{
+                minWidth: 'auto',
+                px: 1.5,
+                fontSize: '0.75rem',
+                fontWeight: i18n.language === 'en' ? 600 : 400,
+                color: i18n.language === 'en' ? colors.primary : colors.textLight,
+                textTransform: 'uppercase'
+              }}
+            >
+              EN
+            </Button>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+            <Button
+              onClick={() => changeLanguage('ar')}
+              sx={{
+                minWidth: 'auto',
+                px: 1.5,
+                fontSize: '0.75rem',
+                fontWeight: i18n.language === 'ar' ? 600 : 400,
+                color: i18n.language === 'ar' ? colors.primary : colors.textLight,
+                textTransform: 'uppercase'
+              }}
+            >
+              AR
+            </Button>
+          </Box>
+
+          {/* Profile Menu */}
+          <Box>
+            <IconButton
+              size="large"
+              aria-label="account of current user"
+              onClick={handleMenu}
+              color="inherit"
+              sx={{ 
+                color: colors.primary,
+                '&:hover': {
+                  bgcolor: 'rgba(63, 81, 181, 0.1)'
+                }
+              }}
+            >
+              <AccountCircleIcon />
+            </IconButton>
+            
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorEl}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+              PaperProps={{
+                sx: {
+                  mt: 1.5,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  borderRadius: '12px',
+                  minWidth: '200px',
+                  border: `1px solid ${colors.border}`
+                }
+              }}
+            >
+              <MenuItem 
+                onClick={handleProfileClick}
+                sx={{ 
+                  py: 1.5, 
+                  px: 2,
+                  '&:hover': {
+                    bgcolor: 'rgba(63, 81, 181, 0.1)'
+                  }
+                }}
               >
-                Create Your First Course
-              </button>
-            )}
-          </motion.div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => {
-              const isEnrolled = enrolledCourses.includes(course.id);
-              const showAssignSelf = user?.role === 'INSTRUCTOR' && !course.instructor;
-              const isAdmin = user?.role === 'ADMIN';
+                <ListItemIcon sx={{ color: colors.primary }}>
+                  <AccountCircleIcon fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body1">{t('dashboard.menu.profile')}</Typography>
+              </MenuItem>
+              <MenuItem 
+                onClick={handleLogout}
+                sx={{ 
+                  py: 1.5, 
+                  px: 2,
+                  '&:hover': {
+                    bgcolor: 'rgba(244, 67, 54, 0.1)'
+                  }
+                }}
+              >
+                <ListItemIcon sx={{ color: colors.error }}>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body1">{t('dashboard.menu.logout')}</Typography>
+              </MenuItem>
+            </Menu>
+          </Box>
+        </Toolbar>
+      </AppBar>
 
-              return (
-                <motion.div
-                  key={course.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  whileHover={{ y: -5 }}
-                  className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 transition-all relative ${
-                    isEnrolled || user?.role !== 'STUDENT' ? 'cursor-pointer hover:shadow-xl' : ''
-                  }`}
-                  onClick={() => handleCourseClick(course.id)}
+      {/* Sidebar */}
+      <Box
+        component="nav"
+        sx={{
+          width: { sm: sidebarCollapsed ? collapsedWidth : drawerWidth },
+          flexShrink: { sm: 0 },
+          '& .MuiDrawer-paper': {
+            width: { sm: sidebarCollapsed ? collapsedWidth : drawerWidth },
+            boxSizing: 'border-box',
+            bgcolor: colors.white,
+            borderRight: `1px solid ${colors.border}`,
+            transition: 'width 0.2s ease'
+          }
+        }}
+      >
+        {/* Mobile Drawer */}
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true,
+          }}
+          sx={{
+            display: { xs: 'block', sm: 'none' },
+            '& .MuiDrawer-paper': { 
+              width: drawerWidth,
+              bgcolor: colors.white,
+              borderRight: `1px solid ${colors.border}`
+            },
+          }}
+        >
+          {drawer}
+        </Drawer>
+        
+        {/* Desktop Drawer */}
+        <Drawer
+          variant="permanent"
+          sx={{
+            display: { xs: 'none', sm: 'block' },
+            '& .MuiDrawer-paper': { 
+              width: { sm: sidebarCollapsed ? collapsedWidth : drawerWidth },
+              bgcolor: colors.white,
+              borderRight: `1px solid ${colors.border}`
+            },
+          }}
+          open
+        >
+          {drawer}
+        </Drawer>
+      </Box>
+
+      {/* Main Content */}
+      <Box
+        component="main"
+        sx={{ 
+          flexGrow: 1,
+          p: 3,
+          width: { 
+            xs: '100%',
+            sm: `calc(100% - ${sidebarCollapsed ? collapsedWidth : drawerWidth}px)`
+          },
+          ml: { sm: `${sidebarCollapsed ? collapsedWidth : drawerWidth}px` },
+          mt: '64px',
+          pb: { xs: '56px', sm: 3 }
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Header Section */}
+          <Box sx={{ 
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', md: 'center' },
+            mb: 4,
+            gap: 2
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <BookOpenIcon style={{ width: 36, height: 36, color: colors.primary }} />
+              <Box>
+                <Typography variant="h4" sx={{ 
+                  fontWeight: 700,
+                  background: colors.gradient,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  {user?.role === 'INSTRUCTOR' ? t('courses.titles.instructorCourses') : t('courses.titles.availableCourses')}
+                </Typography>
+                <Typography variant="body1" sx={{ color: colors.textLight }}>
+                  {user?.role === 'INSTRUCTOR' ? t('courses.subtitles.instructorSubtitle') : t('courses.subtitles.availableSubtitle')}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ArrowPathIcon style={{ 
+                  width: 20, 
+                  height: 20,
+                  animation: refreshing ? 'spin 1s linear infinite' : 'none'
+                }} />}
+                onClick={handleRefresh}
+                disabled={refreshing}
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: '8px'
+                }}
+              >
+                {t('courses.buttons.refresh')}
+              </Button>
+
+              {user?.role === 'ADMIN' && (
+                <Button
+                  variant="contained"
+                  startIcon={<PlusIcon style={{ width: 20, height: 20 }} />}
+                  onClick={() => {
+                    setEditingCourse(null);
+                    setIsModalOpen(true);
+                  }}
+                  sx={{
+                    textTransform: 'none',
+                    borderRadius: '8px',
+                    bgcolor: colors.primary,
+                    '&:hover': {
+                      bgcolor: '#303f9f'
+                    }
+                  }}
                 >
-                  {isAdmin && (
-                    <div className="absolute top-3 right-3 flex gap-2 z-10">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingCourse(course);
-                          setIsModalOpen(true);
-                        }}
-                        className="p-1.5 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200"
-                        title="Edit Course"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </button>
+                  {t('courses.buttons.addCourse')}
+                </Button>
+              )}
+            </Box>
+          </Box>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (window.confirm('Are you sure you want to delete this course?')) {
-                            handleDeleteCourse(course.id);
-                          }
-                        }}
-                        className="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
-                        title="Delete Course"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Paper elevation={0} sx={{ 
+                p: 2, 
+                mb: 3,
+                bgcolor: '#ffeeee',
+                borderLeft: `4px solid ${colors.error}`
+              }}>
+                <Typography variant="body1" sx={{ color: colors.error }}>
+                  {error}
+                </Typography>
+              </Paper>
+            </motion.div>
+          )}
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCurrentCourse(course);
-                          setIsAssignModalOpen(true);
-                        }}
-                        className="p-1.5 bg-yellow-100 text-yellow-600 rounded-full hover:bg-yellow-200"
-                        title="Assign Instructor"
-                      >
-                        <UserPlusIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
+          {/* Courses Grid */}
+          {courses.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <Paper elevation={0} sx={{ 
+                p: 6,
+                textAlign: 'center',
+                bgcolor: colors.cardBg,
+                borderRadius: '16px'
+              }}>
+                <AcademicCapIcon style={{ 
+                  width: 64, 
+                  height: 64, 
+                  color: colors.textLight,
+                  margin: '0 auto 16px'
+                }} />
+                <Typography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
+                  {user?.role === 'INSTRUCTOR' ? t('courses.messages.noCoursesInstructor') : t('courses.messages.noCoursesAvailable')}
+                </Typography>
+                <Typography variant="body1" sx={{ 
+                  color: colors.textLight,
+                  mb: 3
+                }}>
+                  {user?.role === 'INSTRUCTOR' ? t('courses.messages.contactAdmin') : t('courses.messages.checkBack')}
+                </Typography>
+                {user?.role === 'ADMIN' && (
+                  <Button
+                    variant="contained"
+                    startIcon={<PlusIcon style={{ width: 20, height: 20 }} />}
+                    onClick={() => setIsModalOpen(true)}
+                    sx={{
+                      textTransform: 'none',
+                      borderRadius: '8px',
+                      bgcolor: colors.primary,
+                      '&:hover': {
+                        bgcolor: '#303f9f'
+                      }
+                    }}
+                  >
+                    {t('courses.buttons.createFirstCourse')}
+                  </Button>
+                )}
+              </Paper>
+            </motion.div>
+          ) : (
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+              gap: 3
+            }}>
+              {courses.map((course) => {
+                const isEnrolled = enrolledCourses.includes(course.id);
+                const isAdmin = user?.role === 'ADMIN';
 
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {course.category || 'General'}
-                      </span>
-                      <span className="flex items-center text-sm text-gray-500">
-                        <ClockIcon className="h-4 w-4 mr-1" />
-                        {course.duration || 'N/A'} hrs
-                      </span>
-                    </div>
-
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
-
-                    <p className="text-gray-600 mb-4 line-clamp-3">{course.description}</p>
-
-                    <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center">
-  <div className="h-8 w-8 rounded-full bg-purple-200 flex items-center justify-center text-purple-600 font-medium">
-    {course.instructor?.firstName?.charAt(0) || 'I'}
-  </div>
-  <div className="ml-2 text-sm font-medium text-gray-700">
-    {course.instructor?.firstName ? 
-      `${course.instructor.firstName}${course.instructor.lastName ? ' ' + course.instructor.lastName : ''}` 
-      : 'No Instructor'}
-  </div>
-</div>
-
-                      <div className="flex gap-2">
-                        {showAssignSelf && (
-                          <button
+                return (
+                  <motion.div
+                    key={course.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    whileHover={{ y: -4 }}
+                  >
+                    <Paper elevation={1} sx={{ 
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      border: `1px solid ${colors.border}`,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        boxShadow: '0 6px 12px rgba(0,0,0,0.1)',
+                        transform: 'translateY(-4px)'
+                      },
+                      cursor: isEnrolled || user?.role !== 'STUDENT' ? 'pointer' : 'default'
+                    }} onClick={() => handleCourseClick(course.id)}>
+                      {isAdmin && (
+                        <Box sx={{ 
+                          position: 'absolute',
+                          top: 12,
+                          right: 12,
+                          display: 'flex',
+                          gap: 1,
+                          zIndex: 1
+                        }}>
+                          <IconButton
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleAssignSelf(course.id);
+                              setEditingCourse(course);
+                              setIsModalOpen(true);
                             }}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                            sx={{ 
+                              bgcolor: 'rgba(63, 81, 181, 0.1)',
+                              '&:hover': {
+                                bgcolor: 'rgba(63, 81, 181, 0.2)'
+                              }
+                            }}
+                            title={t('courses.buttons.edit')}
                           >
-                            Assign Self
-                          </button>
-                        )}
+                            <PencilIcon style={{ width: 16, height: 16, color: colors.primary }} />
+                          </IconButton>
 
-                        {user?.role === 'STUDENT' && (
-                          isEnrolled ? (
-                            <button
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCourse(course.id);
+                            }}
+                            sx={{ 
+                              bgcolor: 'rgba(244, 67, 54, 0.1)',
+                              '&:hover': {
+                                bgcolor: 'rgba(244, 67, 54, 0.2)'
+                              }
+                            }}
+                            title={t('courses.buttons.delete')}
+                          >
+                            <TrashIcon style={{ width: 16, height: 16, color: colors.error }} />
+                          </IconButton>
+
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCurrentCourse(course);
+                              setIsAssignModalOpen(true);
+                            }}
+                            sx={{ 
+                              bgcolor: 'rgba(255, 152, 0, 0.1)',
+                              '&:hover': {
+                                bgcolor: 'rgba(255, 152, 0, 0.2)'
+                              }
+                            }}
+                            title={t('courses.buttons.assignInstructor')}
+                          >
+                            <UserPlusIcon style={{ width: 16, height: 16, color: colors.warning }} />
+                          </IconButton>
+                        </Box>
+                      )}
+
+                      <Box sx={{ p: 3 }}>
+                        <Box sx={{ mb: 2 }}>
+                          <Chip 
+                            label={course.category || t('courses.labels.general')} 
+                            size="small"
+                            sx={{ 
+                              bgcolor: 'rgba(63, 81, 181, 0.1)',
+                              color: colors.primary
+                            }}
+                          />
+                        </Box>
+
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 600,
+                          mb: 2
+                        }}>
+                          {course.title}
+                        </Typography>
+
+                        <Typography variant="body2" sx={{ 
+                          color: colors.textLight,
+                          mb: 3,
+                          height: 60,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical'
+                        }}>
+                          {course.description}
+                        </Typography>
+
+                        <Divider sx={{ my: 2 }} />
+
+                        <Box sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between'
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{ 
+                              bgcolor: 'rgba(63, 81, 181, 0.1)',
+                              color: colors.primary,
+                              width: 36,
+                              height: 36
+                            }}>
+                              {course.instructor?.firstName?.charAt(0) || 'I'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                {course.instructor?.firstName ? 
+                                  `${course.instructor.firstName}${course.instructor.lastName ? ' ' + course.instructor.lastName : ''}` 
+                                  : t('courses.labels.noInstructor')}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: colors.textLight }}>
+                                {t('courses.labels.instructor')}
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          {user?.role === 'STUDENT' && (
+                            <Button
+                              variant={isEnrolled ? 'outlined' : 'contained'}
+                              size="small"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleUnenroll(course.id);
+                                isEnrolled ? handleUnenroll(course.id) : handleEnroll(course.id);
                               }}
-                              className="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm"
-                            >
-                              Unenroll
-                            </button>
-                          ) : (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEnroll(course.id);
+                              sx={{
+                                textTransform: 'none',
+                                borderRadius: '8px',
+                                bgcolor: isEnrolled ? 'transparent' : colors.success,
+                                color: isEnrolled ? colors.error : colors.white,
+                                borderColor: isEnrolled ? colors.error : 'transparent',
+                                '&:hover': {
+                                  bgcolor: isEnrolled ? 'rgba(244, 67, 54, 0.1)' : '#43a047'
+                                }
                               }}
-                              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                             >
-                              Enroll
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </motion.div>
+                              {isEnrolled ? t('courses.buttons.unEnroll') : t('courses.buttons.enroll')}
+                            </Button>
+                          )}
+                        </Box>
+                      </Box>
+                    </Paper>
+                  </motion.div>
+                );
+              })}
+            </Box>
+          )}
+        </motion.div>
 
-      <CourseFormModal
-  isOpen={isModalOpen}
-  setIsOpen={setIsModalOpen}
-  onCreate={handleCreateCourse}
-  onUpdate={handleUpdateCourse}
-  course={editingCourse}
-  onClose={() => {
-    setIsModalOpen(false);
-    setEditingCourse(null);
-  }}
-/>
+        <CourseFormModal
+          isOpen={isModalOpen}
+          setIsOpen={setIsModalOpen}
+          onCreate={handleCreateCourse}
+          onUpdate={handleUpdateCourse}
+          course={editingCourse}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingCourse(null);
+          }}
+          language={i18n.language}
+        />
 
-<AssignInstructorModal
-        isOpen={isAssignModalOpen}
-        setIsOpen={setIsAssignModalOpen}
-        onAssign={handleAssignInstructor}
-        course={currentCourse}
-        instructors={instructors}
-        onClose={() => setIsAssignModalOpen(false)}
-      />
-    </div>
+        <AssignInstructorModal
+          isOpen={isAssignModalOpen}
+          setIsOpen={setIsAssignModalOpen}
+          onAssign={handleAssignInstructor}
+          course={currentCourse}
+          instructors={instructors}
+          onClose={() => setIsAssignModalOpen(false)}
+          language={i18n.language}
+        />
+
+        <ConfirmDialog
+          isOpen={showConfirmDialog}
+          onClose={() => setShowConfirmDialog(false)}
+          onConfirm={confirmDeleteCourse}
+          title={t('courses.titles.deleteCourse')}
+          message={t('courses.messages.deleteConfirm')}
+          cancelText={t('courses.buttons.cancel')}
+          confirmText={t('courses.buttons.confirm')}
+          language={i18n.language}
+        />
+      </Box>
+
+      {/* Bottom Navigation */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: { xs: 0, sm: sidebarCollapsed ? collapsedWidth : drawerWidth },
+          right: 0,
+          bgcolor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(8px)',
+          borderTop: `1px solid ${colors.border}`,
+          py: 1,
+          px: 2,
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          boxShadow: '0 -1px 3px rgba(0,0,0,0.1)',
+          display: { sm: 'none' }
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-around',
+            alignItems: 'center',
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}
+        >
+          <Button
+            component={Link}
+            to="/dashboard"
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              color: colors.textDark,
+              minWidth: 'auto',
+              '&:hover': {
+                color: colors.primary,
+                bgcolor: 'transparent'
+              },
+              px: 2,
+              py: 1
+            }}
+          >
+            <DashboardIcon sx={{ fontSize: '1.25rem' }} />
+            <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
+              {t('dashboard.menu.dashboard')}
+            </Typography>
+          </Button>
+
+          <Button
+            component={Link}
+            to="/courses"
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              color: colors.primary,
+              minWidth: 'auto',
+              '&:hover': {
+                bgcolor: 'transparent'
+              },
+              px: 2,
+              py: 1
+            }}
+          >
+            <SchoolIcon sx={{ fontSize: '1.25rem' }} />
+            <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
+              {t('dashboard.menu.courses')}
+            </Typography>
+          </Button>
+
+          <Button
+            onClick={handleLogout}
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              color: colors.textDark,
+              minWidth: 'auto',
+              '&:hover': {
+                color: colors.error,
+                bgcolor: 'transparent'
+              },
+              px: 2,
+              py: 1
+            }}
+          >
+            <LogoutIcon sx={{ fontSize: '1.25rem' }} />
+            <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
+              {t('dashboard.menu.logout')}
+            </Typography>
+          </Button>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

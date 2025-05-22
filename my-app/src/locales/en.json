@@ -433,5 +433,100 @@
   },
   "messages": {
     "updateSuccess": "Profile updated successfully!"
+  },
+
+  
+    "courses": {
+      "titles": {
+        "instructorCourses": "My Teaching Courses",
+        "availableCourses": "Available Courses",
+        "deleteCourse": "Delete Course"
+      },
+      "subtitles": {
+        "instructorSubtitle": "Courses assigned to you",
+        "availableSubtitle": "Browse and manage all available learning programs"
+      },
+      "buttons": {
+        "refresh": "Refresh",
+        "addCourse": "Add Course",
+        "createFirstCourse": "Create First Course",
+        "edit": "Edit",
+        "delete": "Delete",
+        "assignInstructor": "Assign Instructor",
+        "enroll": "Enroll",
+        "unEnroll": "Unenroll",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "messages": {
+        "noCoursesInstructor": "No courses assigned to you yet",
+        "noCoursesAvailable": "No courses available",
+        "contactAdmin": "Please contact administrator to be assigned to courses",
+        "checkBack": "Check back later or contact support for more information.",
+        "deleteConfirm": "Are you sure you want to delete this course? This action cannot be undone.",
+        "serverError": "Server error. Please contact administrator.",
+        "loadCoursesError": "Failed to load courses. Please try again later."
+      },
+      "labels": {
+        "instructor": "Instructor",
+        "category": "Category",
+        "general": "General"
+      }
+    } ,"dashboard": {
+      "title": "LMS Dashboard",
+      "welcome": "Welcome back, {name}!",
+      "menu": {
+        "dashboard": "Dashboard",
+        "courses": "Courses",
+        "home": "Home",
+        "logout": "Logout",
+        "profile": "User Profile"
+      }
+    },
+  "dashboard": {
+    "title": "Learning Platform",
+    "welcome": "Welcome, {{name}}!",
+    "menu": {
+      "dashboard": "Dashboard",
+      "courses": "Courses",
+      "home": "Home",
+      "profile": "Profile",
+      "logout": "Logout"
+    },
+    "admin": {
+      "totalUsers": "Total Users",
+      "userManagement": "User Management"
+    },
+    "instructor": {
+      "coursesTaught": "Courses Taught",
+      "totalStudents": "Total Students"
+    },
+    "student": {
+      "professors": "Professors",
+      "myCourses": "My Courses",
+      "enrolledCourses": "Enrolled Courses",
+      "completed": "Completed",
+      "inProgress": "In Progress"
+    },
+    "common": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save": "Save",
+      "confirm": "Confirm",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "role": "Role",
+      "email": "Email",
+      "actions": "Actions",
+      "allRoles": "All Roles",
+      "admin": "Admin",
+      "instructor": "Instructor",
+      "student": "Student",
+      "status": "Status",
+      "enrolledAt": "Enrolled At",
+      "noCourses": "You are not enrolled in any courses yet",
+      "confirmDelete": "Are you sure you want to delete {{firstName}} {{lastName}}? This action cannot be undone."
+    }
   }
 }
