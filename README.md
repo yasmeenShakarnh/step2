@@ -32,7 +32,7 @@ This LMS allows user registration, course management, content delivery, assessme
 | Backend                      | Frontend                        |
 |-----------------------------|----------------------------------|
 | Java 21+                    | React.js                        |
-| Spring Boot + Spring Sec    | Material UI / Bootstrap / Tailwind |
+| Spring Boot + Spring Sec    | Material UI /Tailwind |
 | Spring Data JPA             | Redux / Context API             |
 | PostgreSQL                  | Axios for API calls             |
 | Swagger / OpenAPI           | FontAwesome for Icons           |
